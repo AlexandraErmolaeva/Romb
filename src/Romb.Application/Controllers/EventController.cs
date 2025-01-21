@@ -24,22 +24,22 @@ public class EventController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<EventOutputDto>>> GetAllEventsAsync()
     {
-        _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
+            _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
-        var dtos = await _eventService.GetAllEventsAsync();
+            var dtos = await _eventService.GetAllEventsAsync();
 
-        if (!dtos.Any())
-        {
-            _logger.LogInformation("[{NameOfController}]: Events not found.", ControllerName);
+            if (!dtos.Any())
+            {
+                _logger.LogInformation("[{NameOfController}]: Events not found.", ControllerName);
+                LoggingRequestCompletion();
+
+                return NotFound();
+            }
+
+            _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
             LoggingRequestCompletion();
 
-            return NotFound();
-        }
-
-        _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
-        LoggingRequestCompletion();
-
-        return Ok(dtos);
+            return Ok(dtos);
     }
 
     [HttpGet("{id}")]
@@ -141,3 +141,4 @@ public class EventController : ControllerBase
         _logger.LogInformation(_separator);
     }
 }
+

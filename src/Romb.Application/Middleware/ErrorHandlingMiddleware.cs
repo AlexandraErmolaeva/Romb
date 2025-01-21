@@ -22,7 +22,6 @@ public class ErrorHandlingMiddleware
             _logger.LogInformation("Handling request: {Method}, {Path}", context.Request.Method, context.Request.Path);
 
             await _nextDelegate(context);
-
         }
         catch (Exception ex)
         {
@@ -32,7 +31,6 @@ public class ErrorHandlingMiddleware
         }
         finally
         {
-            // finally блок используется, чтобы зафиксировать завершение обработки запроса.
             _logger.LogInformation("Finished handling request: {Method}, {Path}.", context.Request.Method, context.Request.Path);
         }
     }
@@ -41,12 +39,12 @@ public class ErrorHandlingMiddleware
     {
         var statusCode = exception switch
         {
-            KeyNotFoundException => HttpStatusCode.NotFound, // 404.
-            ArgumentException => HttpStatusCode.BadRequest, // 400.
-            EventCofinanceRateIncorrectValueException => HttpStatusCode.BadRequest, // 400.
-            EventTotalBudgetIncorrectValueException => HttpStatusCode.BadRequest, // 400.
-            EventCalculatingBudgetException => HttpStatusCode.BadRequest, // 400.
-            _ => HttpStatusCode.InternalServerError // 500.
+            KeyNotFoundException => HttpStatusCode.NotFound, 
+            ArgumentException => HttpStatusCode.BadRequest, 
+            EventCofinanceRateIncorrectValueException => HttpStatusCode.BadRequest,
+            EventTotalBudgetIncorrectValueException => HttpStatusCode.BadRequest,
+            EventCalculatingBudgetException => HttpStatusCode.BadRequest,
+            _ => HttpStatusCode.InternalServerError 
         };
 
         var errorResponse = new

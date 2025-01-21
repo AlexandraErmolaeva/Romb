@@ -37,13 +37,13 @@ public class EventServiceTest
     [Fact]
     public async Task GetAllEventsAsync_ReturnAllEvents()
     {
-        var eventEntities = CreateEvents().AsQueryable();
+        var entities = CreateEvents().AsQueryable();
 
-        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(eventEntities);
+        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(entities);
 
-        var resultEventDtos = await _eventService.GetAllEventsAsync();
+        var dtos = await _eventService.GetAllEventsAsync();
 
-        AssertEntitiesAndDtosCollectionMatch(eventEntities, resultEventDtos);
+        AssertEntitiesAndDtosCollectionMatch(entities, dtos);
 
         _mockDbContext.Reset();
     }
@@ -58,19 +58,19 @@ public class EventServiceTest
         var idForGet = (long)eventEntities.Count() - 1;
         var entity = eventEntities.First(e => e.Id == idForGet);
 
-        var resultEventDto = await _eventService.GetEventByIdAsync(idForGet);
+        var dto = await _eventService.GetEventByIdAsync(idForGet);
 
-        AssertEntityAndDtoMatch(entity, resultEventDto);
+        AssertEntityAndDtoMatch(entity, dto);
 
         _mockDbContext.Reset();
     }
 
-    private void AssertEntitiesAndDtosCollectionMatch(IEnumerable<EventEntity> entities, IEnumerable<EventOutputDto> resultDtos)
+    private void AssertEntitiesAndDtosCollectionMatch(IEnumerable<EventEntity> entities, IEnumerable<EventOutputDto> dtos)
     {
-        Assert.NotNull(resultDtos);
+        Assert.NotNull(dtos);
 
-        var isMatched = resultDtos.Count() == entities.Count() &&
-            resultDtos.Zip(entities, (e, d) =>
+        var isMatched = dtos.Count() == entities.Count() &&
+            dtos.Zip(entities, (e, d) =>
             e.Id == d.Id && e.Name == d.Name && e.CofinanceRate == d.CofinanceRate &&
             e.TotalBudget == d.TotalBudget && e.LocalBudget == d.LocalBudget && e.RegionalBudget == d.RegionalBudget)
             .All(match => match);
@@ -78,20 +78,20 @@ public class EventServiceTest
         Assert.True(isMatched);
     }
 
-    private void AssertEntityAndDtoMatch(EventEntity entity, EventOutputDto resultDto)
+    private void AssertEntityAndDtoMatch(EventEntity entity, EventOutputDto dto)
     {
-        Assert.NotNull(resultDto);
+        Assert.NotNull(dto);
 
-        var isMatched = entity.Id == resultDto.Id && entity.Name == resultDto.Name &&
-            entity.TotalBudget == resultDto.TotalBudget && entity.LocalBudget == resultDto.LocalBudget &&
-            entity.RegionalBudget == resultDto.RegionalBudget;
+        var isMatched = entity.Id == dto.Id && entity.Name == dto.Name &&
+            entity.TotalBudget == dto.TotalBudget && entity.LocalBudget == dto.LocalBudget &&
+            entity.RegionalBudget == dto.RegionalBudget;
 
         Assert.True(isMatched);
     }
 
     private List<EventEntity> CreateEvents()
     {
-        var eventEntities = new List<EventEntity>();
+        var entities = new List<EventEntity>();
 
         for (int i = 1; i <= 10; i++)
         {
@@ -106,9 +106,9 @@ public class EventServiceTest
             entity.RegionalBudget = entity.TotalBudget / 100 * entity.CofinanceRate;
             entity.LocalBudget = entity.TotalBudget - (entity.TotalBudget / 100 * entity.CofinanceRate);
 
-            eventEntities.Add(entity);
+            entities.Add(entity);
         }
 
-        return eventEntities;
+        return entities;
     }
 }

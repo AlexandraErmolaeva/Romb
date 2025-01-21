@@ -46,11 +46,6 @@ public class EventService : IEventService
     {
         return _mapper.Map<IEnumerable<EventOutputDto>>(entity);
     }
-    // TODO: я пока не использую никаких входящих списков. Надо глядеть, понадобиться ли этот маппинг.
-    //public IEnumerable<EventEntity> MapToListEntity(IEnumerable<EventInputDto> dto)
-    //{
-    //    return _mapper.Map<IEnumerable<EventEntity>>(dto);
-    //}
     #endregion
 
     #region [Getting events]
@@ -153,7 +148,7 @@ public class EventService : IEventService
         var previousValueOfRegionalBudget = entity.RegionalBudget;
         var previousValueOfLocalBudget = entity.LocalBudget;
 
-        PrepareEventEntity(entity, dto); //TODO: prepare - подготовить ?? может поменять имя?
+        PrepareEventEntity(entity, dto);
 
         await _dbContext.SaveChangesAsync();
 

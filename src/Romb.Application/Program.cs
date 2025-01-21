@@ -3,6 +3,7 @@ using Romb.Application;
 using Romb.Application.Calculators;
 using Romb.Application.Extensions;
 using Romb.Application.Mappers;
+using Romb.Application.Middleware;
 using Romb.Application.Services;
 using Serilog;
 using System.Reflection;
@@ -54,6 +55,9 @@ if (app.Environment.IsDevelopment())
 LogInformation("- Using Https Redirection...");
 app.UseHttpsRedirection();
 
+LogInformation($"- Using {nameof(ErrorHandlingMiddleware)}...");
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
 LogInformation("- Using Routing...");
 app.UseRouting();
 
@@ -69,7 +73,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Application terminated unexpectedly");
+    Log.Fatal(ex, "Application terminated unexpectedly.");
 }
 finally
 {

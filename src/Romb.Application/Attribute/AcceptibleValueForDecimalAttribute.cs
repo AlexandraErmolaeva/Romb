@@ -2,7 +2,6 @@
 
 namespace Romb.Application.Attribute;
 
-// TODO: Подумать над названием атрибута.
 public class AcceptibleValueForDecimalAttribute : ValidationAttribute
 {
     public decimal Min { get; set; }

@@ -9,7 +9,6 @@ public class EventInputDto
     [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters.")]
     public string Name { get; set; }
 
-    // TODO: разобраться с децималом.
     [Required(ErrorMessage = "Value is required.")]
     [DigitsOnly]
     [AcceptibleValueForDecimal]

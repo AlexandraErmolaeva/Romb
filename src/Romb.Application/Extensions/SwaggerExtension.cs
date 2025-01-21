@@ -11,7 +11,6 @@ public static class SwaggerExtension
         {
             options.EnableAnnotations();
 
-            // Добавляем XML-документацию, если доступна
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 
