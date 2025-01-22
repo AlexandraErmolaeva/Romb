@@ -9,14 +9,12 @@ public class EventInputDto
     [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters.")]
     public string Name { get; set; }
 
-    [Required(ErrorMessage = "Value is required.")]
     [DigitsOnly]
     [AcceptibleValueForDecimal]
+    [CannotContainZeroValue]
     public decimal TotalBudget { get; set; }
 
-    [Required(ErrorMessage = "Value is required.")]
     [DigitsOnly]
     [Range(0, 100, ErrorMessage = "Cofinance rate is incorrect.")]
     public decimal CofinanceRate { get; set; }
-
-}
+} 

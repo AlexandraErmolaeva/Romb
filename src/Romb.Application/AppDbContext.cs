@@ -14,28 +14,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.ToTable("events");
 
             entity.Property(e => e.Id)
-                  .HasColumnType("id"); 
+                  .HasColumnName("id"); 
 
             entity.Property(e => e.Name)
-                  .HasColumnType("name");
+                  .HasColumnName("name");
 
             entity.Property(e => e.TotalBudget)
-                  .HasColumnType("total_budget"); 
+                  .HasColumnName("total_budget"); 
 
             entity.Property(e => e.CofinanceRate)
-                  .HasColumnType("cofinance_rate");
+                  .HasColumnName("cofinance_rate");
 
             entity.Property(e => e.LocalBudget)
-                  .HasColumnType("local_budget");
+                  .HasColumnName("local_budget");
 
             entity.Property(e => e.RegionalBudget)
-                  .HasColumnType("regional_budget");
+                  .HasColumnName("regional_budget");
 
             entity.Property(e => e.CreatedAt)
-                  .HasColumnType("created_at");
+                  .HasColumnName("created_at");
 
             entity.Property(e => e.UpdatedAt)
-                  .HasColumnType("updated_at");
+                  .HasColumnName("updated_at");
         }
         );
     }

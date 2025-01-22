@@ -15,8 +15,8 @@ public class AcceptibleValueForDecimalAttribute : ValidationAttribute
 
     public override bool IsValid(object value)
     {
-        if (value == null)
-            return true;
+        if (value is null)
+            return false;
 
         if (value is decimal decimalValue)
             return decimalValue >= Min && decimalValue <= Max;

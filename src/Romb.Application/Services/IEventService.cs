@@ -5,10 +5,10 @@ namespace Romb.Application.Services;
 
 public interface IEventService
 {
-    Task<EventOutputDto> GetEventByIdAsync(long id);
-    Task<IEnumerable<EventOutputDto>> GetAllEventsAsync();
-    Task<EventOutputDto> AddEventAsync(EventInputDto eventDto);
-    Task DeleteEventByIdAsync(long id);
-    Task DeleteAllEventAsync();
-    Task UpdateEventByIdAsync(long id, EventInputDto dto);
+    Task<EventOutputDto> GetByIdAsync(long id);
+    Task<IEnumerable<EventOutputDto>> GetAsync();
+    Task<EventOutputDto> AddAsync(EventInputDto eventDto);
+    Task DeleteByIdAsync(long id);
+    Task DeleteAsync();
+    Task UpdateByIdAsync(long id, EventInputDto dto);
 }

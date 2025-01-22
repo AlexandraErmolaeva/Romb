@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Romb.Application;
 using Romb.Application.Calculators;
 using Romb.Application.Extensions;
@@ -6,6 +7,7 @@ using Romb.Application.Mappers;
 using Romb.Application.Middleware;
 using Romb.Application.Services;
 using Serilog;
+using StackExchange.Redis;
 using System.Reflection;
 
 var assemblyName = Assembly.GetExecutingAssembly().GetName();
@@ -22,6 +24,9 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 PrintApplicationInfo(assemblyName);
+
+LogInformation("- Adding Redis...");
+services.AddCustomRedis(configuration);
 
 LogInformation("- Adding Swagger...");
 services.AddCustomSwagger(assemblyName.Name);

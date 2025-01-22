@@ -41,7 +41,7 @@ public class EventServiceTest
 
         _mockDbContext.Setup(db => db.Events).ReturnsDbSet(entities);
 
-        var dtos = await _eventService.GetAllEventsAsync();
+        var dtos = await _eventService.GetAsync();
 
         AssertEntitiesAndDtosCollectionMatch(entities, dtos);
 
@@ -58,7 +58,7 @@ public class EventServiceTest
         var idForGet = (long)eventEntities.Count() - 1;
         var entity = eventEntities.First(e => e.Id == idForGet);
 
-        var dto = await _eventService.GetEventByIdAsync(idForGet);
+        var dto = await _eventService.GetByIdAsync(idForGet);
 
         AssertEntityAndDtoMatch(entity, dto);
 

@@ -9,46 +9,55 @@ namespace Romb.Application.Controllers;
 public class EventController : ControllerBase
 {
     private readonly IEventService _eventService;
+    private readonly IRedisService _redisService;
     private readonly ILogger<EventController> _logger;
 
+    private const string KeyForAllEvent = "events: all";
     private const string ControllerName = nameof(EventController);
+
     private readonly string _separator = new string('-', 30);
 
-    public EventController(IEventService eventService, ILogger<EventController> logger)
+    public EventController(IEventService eventService, IRedisService redisService, ILogger<EventController> logger)
     {
         _eventService = eventService;
+        _redisService = redisService;
         _logger = logger;
     }
 
     #region [GET]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EventOutputDto>>> GetAllEventsAsync()
+    public async Task<ActionResult<IEnumerable<EventOutputDto>>> GetAsync()
     {
-            _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
+        _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
-            var dtos = await _eventService.GetAllEventsAsync();
+        var cacheDtos = await _redisService.GetAsync<IEnumerable<EventOutputDto>>(KeyForAllEvent);
 
-            if (!dtos.Any())
-            {
-                _logger.LogInformation("[{NameOfController}]: Events not found.", ControllerName);
-                LoggingRequestCompletion();
+        if (cacheDtos.Any())
+            return Ok(cacheDtos);
 
-                return NotFound();
-            }
+        var dtos = await _eventService.GetAsync();
 
-            _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
+        if (!dtos.Any())
+        {
+            _logger.LogInformation("[{NameOfController}]: Events not found.", ControllerName);
             LoggingRequestCompletion();
 
-            return Ok(dtos);
+            return NotFound();
+        }
+
+        _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
+        LoggingRequestCompletion();
+
+        return Ok(dtos);
     }
 
     [HttpGet("{id}")]
-    [ActionName(nameof(GetEventByIdAsync))]
-    public async Task<ActionResult<EventOutputDto>> GetEventByIdAsync(long id)
+    [ActionName(nameof(GetByIdAsync))]
+    public async Task<ActionResult<EventOutputDto>> GetByIdAsync(long id)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get event with ID: {Id}.", ControllerName, id);
 
-        var dto = await _eventService.GetEventByIdAsync(id);
+        var dto = await _eventService.GetByIdAsync(id);
 
         if (dto is null)
         {
@@ -67,7 +76,7 @@ public class EventController : ControllerBase
 
     #region [POST]
     [HttpPost]
-    public async Task<IActionResult> AddEventAsync([FromBody] EventInputDto dto)
+    public async Task<IActionResult> AddAsync([FromBody] EventInputDto dto)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to add event.", ControllerName);
 
@@ -83,22 +92,22 @@ public class EventController : ControllerBase
             return BadRequest(new { message = "Validation failed.", errors = validationErrors });
         }
 
-        var outputDto = await _eventService.AddEventAsync(dto);
+        var outputDto = await _eventService.AddAsync(dto);
 
         _logger.LogInformation("[{NameOfController}]: Event has been successfuly added with ID: {Id}.", ControllerName, outputDto.Id);
         LoggingRequestCompletion();
 
-        return CreatedAtAction(nameof(GetEventByIdAsync), new { id = outputDto.Id }, outputDto);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = outputDto.Id }, outputDto);
     }
     #endregion
 
     #region [PUT]
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateEventByIdAsync(long id, [FromBody] EventInputDto dto)
+    public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] EventInputDto dto)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
 
-        await _eventService.UpdateEventByIdAsync(id, dto);
+        await _eventService.UpdateByIdAsync(id, dto);
 
         _logger.LogInformation("[{NameOfController}]: Update request has been successfuly completed for event with ID: {Id}.", ControllerName, id);
         LoggingRequestCompletion();
@@ -109,11 +118,11 @@ public class EventController : ControllerBase
 
     #region [DELETE]
     [HttpDelete]
-    public async Task<IActionResult> DeleteAllEventsAsync()
+    public async Task<IActionResult> DeleteAsync()
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to delete all events.", ControllerName);
 
-        await _eventService.DeleteAllEventAsync();
+        await _eventService.DeleteAsync();
 
         _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for all events.", ControllerName);
         LoggingRequestCompletion();
@@ -122,11 +131,11 @@ public class EventController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteEventByIdAsync(long id)
+    public async Task<IActionResult> DeleteByIdAsync(long id)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to delete event with ID: {Id}.", ControllerName, id);
 
-        await _eventService.DeleteEventByIdAsync(id);
+        await _eventService.DeleteByIdAsync(id);
 
         _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for event with ID: {Id}.", ControllerName, id);
         LoggingRequestCompletion();
@@ -137,7 +146,7 @@ public class EventController : ControllerBase
 
     private void LoggingRequestCompletion()
     {
-        _logger.LogInformation("[Request is completion.]");
+        _logger.LogInformation("[Request is completion]");
         _logger.LogInformation(_separator);
     }
 }
