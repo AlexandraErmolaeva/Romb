@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Romb.Application.Dtos;
 using Romb.Application.Entities;
 using Romb.Application.Services;
 
@@ -43,12 +44,11 @@ public class EventRepository : IEventRepository
         await _dbContext.SaveChangesAsync();
     }
 
-    public async Task DeleteAllAsync()
+    public async Task DeleteAsync()
     {
         await _dbContext.Database.ExecuteSqlRawAsync("DELETE FROM Events");
     }
 
-    // TODO: нужен ли этот метод?
     public async Task<bool> ExistsAsync(long id)
     {
         return await _dbContext.Events.AnyAsync(e => e.Id == id);

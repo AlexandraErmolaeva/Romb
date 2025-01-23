@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Romb.Application.Dtos;
+using Romb.Application.Exceptions;
 using Romb.Application.Services;
 
 namespace Romb.Application.Controllers;
@@ -12,15 +13,13 @@ public class EventController : ControllerBase
     private readonly IRedisService _redisService;
     private readonly ILogger<EventController> _logger;
 
-    private const string KeyForAllEvent = "events: all";
-    private const string ControllerName = nameof(EventController);
-
     private readonly string _separator = new string('-', 30);
 
-    public EventController(IEventService eventService, IRedisService redisService, ILogger<EventController> logger)
+    private const string ControllerName = nameof(EventController);
+
+    public EventController(IEventService eventService, ILogger<EventController> logger)
     {
         _eventService = eventService;
-        _redisService = redisService;
         _logger = logger;
     }
 
@@ -30,20 +29,7 @@ public class EventController : ControllerBase
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
-        var cacheDtos = await _redisService.GetAsync<IEnumerable<EventOutputDto>>(KeyForAllEvent);
-
-        if (!cacheDtos is not null)
-            return Ok(cacheDtos);
-
         var dtos = await _eventService.GetAsync();
-
-        if (!dtos.Any())
-        {
-            _logger.LogInformation("[{NameOfController}]: Events not found.", ControllerName);
-            LoggingRequestCompletion();
-
-            return NotFound();
-        }
 
         _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
         LoggingRequestCompletion();
@@ -61,7 +47,7 @@ public class EventController : ControllerBase
 
         if (dto is null)
         {
-            _logger.LogInformation("[{NameOfController}]: Event not found with ID: {Id}.", ControllerName, id);
+            _logger.LogError("[{NameOfController}]: Event not found with ID: {Id}.", ControllerName, id);
             LoggingRequestCompletion();
 
             return NotFound();
@@ -105,14 +91,24 @@ public class EventController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] EventInputDto dto)
     {
-        _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
+        try
+        {
+            _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
 
-        await _eventService.UpdateByIdAsync(id, dto);
+            await _eventService.UpdateByIdAsync(id, dto);
 
-        _logger.LogInformation("[{NameOfController}]: Update request has been successfuly completed for event with ID: {Id}.", ControllerName, id);
-        LoggingRequestCompletion();
+            _logger.LogInformation("[{NameOfController}]: Update request has been successfuly completed for event with ID: {Id}.", ControllerName, id);
+            LoggingRequestCompletion();
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (EntityNotFoundException ex)
+        {
+            _logger.LogError(ex, "[{NameOfController}]: Event not found with ID: {Id}.", ControllerName, id);
+            LoggingRequestCompletion();
+
+            return NotFound();
+        }
     }
     #endregion
 
@@ -133,14 +129,24 @@ public class EventController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteByIdAsync(long id)
     {
-        _logger.LogInformation("[{NameOfController}]: Recieved a request to delete event with ID: {Id}.", ControllerName, id);
+        try
+        {
+            _logger.LogInformation("[{NameOfController}]: Recieved a request to delete event with ID: {Id}.", ControllerName, id);
 
-        await _eventService.DeleteByIdAsync(id);
+            await _eventService.DeleteByIdAsync(id);
 
-        _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for event with ID: {Id}.", ControllerName, id);
-        LoggingRequestCompletion();
+            _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for event with ID: {Id}.", ControllerName, id);
+            LoggingRequestCompletion();
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (EntityNotFoundException ex)
+        {
+            _logger.LogError(ex, "[{NameOfController}]: Event not found with ID: {Id}.", ControllerName, id);
+            LoggingRequestCompletion();
+
+            return NotFound();
+        }
     }
     #endregion
 

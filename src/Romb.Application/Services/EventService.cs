@@ -1,32 +1,34 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using Romb.Application.Helpers;
 using Romb.Application.Dtos;
 using Romb.Application.Entities;
 using Romb.Application.Exceptions;
-using System.Text;
 using Romb.Application.Repositories;
+using StackExchange.Redis;
+using Romb.Application.Extensions;
 
 namespace Romb.Application.Services;
 
+// TODO: Разобраться с токенами отмены.
+// TODO: транзакции.
+
 public class EventService : IEventService
 {
-    private readonly AppDbContext _dbContext;
-    private readonly IEventRepository _eventrepository;
+    private readonly IEventRepository _eventRepository;
     private readonly IMapper _mapper;
     private readonly IBudgetCalculator _budgetCalculator;
     private readonly IRedisService _redisService;
     private readonly ILogger<EventService> _logger;
 
     private const string ServiceName = nameof(EventService);
-    private const string KeyForAllEvent = "events: all";
 
     private readonly string _separator = new string('-', 30);
 
-    public EventService(AppDbContext dbContext, IEventRepository eventRepository, IMapper mapper, IBudgetCalculator budgetCalculator, IRedisService redisService, ILogger<EventService> logger)
+    public EventService(IEventRepository eventRepository,
+                        IMapper mapper, IBudgetCalculator budgetCalculator,
+                        IRedisService redisService, ILogger<EventService> logger)
     {
-        _dbContext = dbContext;
-        _eventrepository = eventRepository;
+        _eventRepository = eventRepository;
         _mapper = mapper;
         _budgetCalculator = budgetCalculator;
         _redisService = redisService;
@@ -34,173 +36,124 @@ public class EventService : IEventService
     }
 
     #region [Getting events]
-    public async Task<IEnumerable<EventOutputDto>> GetAsync()
+    public async Task<IEnumerable<EventOutputDto>> GetAsync(CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting all events from the database...", ServiceName);
 
-        var entities = await _dbContext.Events.AsNoTracking().ToListAsync();
+        try
+        {
+            var cachedDtos = await _redisService.GetAsync<IEnumerable<EventOutputDto>>(CacheKey.KeyForAllEvent);
 
-        var outputDtos = CreateOutputDtosCollection(entities);
+            if (cachedDtos?.Any() == true)
+            {
+                _logger.LogInformation("[{ServiceName}]: Cache hit with key: {Key}", ServiceName, CacheKey.KeyForAllEvent);
 
-        var cacheTime = TimeSpan.FromMinutes(10);
+                return cachedDtos;
+            }
 
-        await _redisService.SetAsync(KeyForAllEvent, outputDtos, cacheTime);
+            var entities = await _eventRepository.GetAsync();
 
-        return outputDtos;
+            var outputDtos = CreateOutputDtosCollection(entities);
+
+            // TODO: нужно понять, как правильно кешировать, если вдруг и на этом этапе выскочила ошибка.
+            var cacheTime = TimeSpan.FromMinutes(10);
+
+            await _redisService.SetAsync(CacheKey.KeyForAllEvent, outputDtos, cacheTime);
+
+            return outputDtos;
+        }
+        catch (RedisException ex)
+        {
+            _logger.LogError(ex, "[{ServiceName}]: An error has occurred in Redis, data is being loaded from the database.", ServiceName);
+
+            var entities = await _eventRepository.GetAsync();
+
+            return CreateOutputDtosCollection(entities);
+        }
     }
 
-    public async Task<EventOutputDto> GetByIdAsync(long id)
+    public async Task<EventOutputDto> GetByIdAsync(long id, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting event from the database with ID: {Id}...", ServiceName, id);
 
-        var entity = await _dbContext.Events
-            .AsNoTracking().FirstOrDefaultAsync(entity => entity.Id == id);
+        var entity = await _eventRepository.GetByIdAsync(id);
 
-        CheckExistence(entity);
+        var outputDto = entity is not null ? CreateOutputDtoFromEntity(entity) : throw new EntityNotFoundException("Entity not found.");
 
-        var outputDto = CreateOutputDtoFromEntity(entity);
         return outputDto;
     }
     #endregion
 
     #region [Adding events]
-    public async Task<EventOutputDto> AddAsync(EventInputDto dto)
+    public async Task<EventOutputDto> AddAsync(EventInputDto dto, CancellationToken token = default)
     {
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
+
         _logger.LogInformation("[{ServiceName}]: Adding event to the database...", ServiceName);
 
-        CheckValidity(dto);
+        dto.CheckValidity();
 
         var entity = PrepareEntity(CreateEntityFromInputDto(dto), dto);
 
-        _dbContext.Events.Add(entity);
-
-        await _dbContext.SaveChangesAsync();
+        await _eventRepository.AddAsync(entity);
 
         _logger.LogInformation("[{ServiceName}]: Event successfully added to the database.", ServiceName);
 
         var outputDto = CreateOutputDtoFromEntity(entity);
+
         return outputDto;
     }
     #endregion
 
     #region [Deleting events]
-    public async Task DeleteByIdAsync(long id)
+    public async Task DeleteByIdAsync(long id, CancellationToken token = default)
     {
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
+
         _logger.LogInformation("[{ServiceName}]: Event is being deleted from the database with ID: {Id}...", ServiceName, id);
 
-        var entity = await _dbContext.Events.FindAsync(id);
+        var entity = await _eventRepository.GetByIdAsync(id) ?? throw new EntityNotFoundException("Entity not found.");
 
-        CheckExistence(entity);
-
-        _dbContext.Remove(entity);
-
-        await _dbContext.SaveChangesAsync();
+        await _eventRepository.DeleteAsync(entity);
 
         _logger.LogInformation("[{ServiceName}]: Event has been deleted from the database with ID: {Id}.", ServiceName, id);
     }
 
-    public async Task DeleteAsync()
+    public async Task DeleteAsync(CancellationToken token = default)
     {
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
+
         _logger.LogInformation("[{ServiceName}]: All events is being deleted from the database...", ServiceName);
 
-        await _dbContext.Database.ExecuteSqlRawAsync("DELETE FROM Events");
+        await _eventRepository.DeleteAsync();
 
         _logger.LogInformation("[{ServiceName}]: All events have been deleted from the database.", ServiceName);
     }
     #endregion
 
     #region [Updating events]
-    public async Task UpdateByIdAsync(long id, EventInputDto dto)
+    public async Task UpdateByIdAsync(long id, EventInputDto dto, CancellationToken token = default)
     {
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
+
         _logger.LogInformation("[{ServiceName}]: Updating the event in the database with ID: {Id}...", ServiceName, id);
 
-        CheckValidity(dto);
+        var entity = await _eventRepository.GetByIdAsync(id) ?? throw new EntityNotFoundException("Entity not found.");
 
-        var entity = await _dbContext.Events.FindAsync(id);
-
-        CheckExistence(entity);
-
-        _logger.LogInformation("[{ServiceName}]: Trying to update event with ID: {Id}...", ServiceName, id);
-
-        var sb = new StringBuilder();
-
-        // TODO: ЗАменить на логгер.
-        sb.AppendLine($"\n{_separator}")
-            .AppendLine($"- Current name                      : {entity.Name}")
-            .AppendLine($"- Name to update                    : {dto.Name}")
-            .AppendLine($"{_separator}")
-            .AppendLine($"- Current total budget              : {entity.TotalBudget}")
-            .AppendLine($"- Total budget to update            : {dto.TotalBudget}")
-            .AppendLine($"{_separator}")
-            .AppendLine($"- Current cofinance rate            : {entity.CofinanceRate}")
-            .AppendLine($"- Cofinance rate to update          : {dto.CofinanceRate}")
-            .AppendLine($"{_separator}");
+        dto.CheckValidity();
 
         var previousValueOfRegionalBudget = entity.RegionalBudget;
         var previousValueOfLocalBudget = entity.LocalBudget;
 
-        var isNeedToUpdate = true;
+        _ = PrepareEntity(entity, dto, isNeedToUpdate : true);
 
-        PrepareEntity(entity, dto, isNeedToUpdate);
+        await _eventRepository.UpdateAsync(entity);
 
-        await _dbContext.SaveChangesAsync();
-
-        sb.AppendLine($"- Previous value of regional budget : {previousValueOfRegionalBudget}")
-            .AppendLine($"- Current value of regional budget  : {entity.RegionalBudget}")
-            .AppendLine($"{_separator}")
-            .AppendLine($"- Previous value of local budget    : {previousValueOfLocalBudget}")
-            .AppendLine($"- Current value of local budget     : {entity.LocalBudget}")
-            .Append($"{_separator}");
-
-        _logger.LogInformation(sb.ToString());
+        PrintUpdatingEntity(entity, dto, previousValueOfRegionalBudget, previousValueOfLocalBudget);
 
         _logger.LogInformation("[{ServiceName}]: Event has been successfully updated with ID: {Id}", ServiceName, id);
     }
     #endregion
-
-    private void CheckValidity(EventInputDto dto)
-    {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            throw new ArgumentException("Name cannot be empty.");
-
-        if (dto.CofinanceRate < 0 || dto.CofinanceRate > 100)
-            throw new EventCofinanceRateIncorrectValueException("Incorrect cofinance rate.");
-
-        if (dto.TotalBudget <= 0 || dto.TotalBudget > decimal.MaxValue)
-            throw new EventTotalBudgetIncorrectValueException("Incorrect total budget value.");
-    }
-
-    private void CheckExistence<T>(T entity)
-    {
-        var entityTypeName = typeof(T).Name;
-
-        _logger.LogInformation("[{ServiceName}]: Checking if the entity exists...", ServiceName);
-
-        if (entity is null)
-        {
-            _logger.LogWarning("[{ServiceName}]: Entity not found.", ServiceName);
-
-            throw new KeyNotFoundException($"Entity not found.");
-        }
-
-        _logger.LogInformation("[{ServiceName}]: {ItemType} was successfully recieved from database.", ServiceName, entityTypeName);
-    }
-
-    private void CheckCollectionExistance<T>(IEnumerable<T> collection)
-    {
-        var collectionTypeName = typeof(T).Name;
-
-        _logger.LogInformation("[{ServiceName}]: Checking if the entities collection exists...", ServiceName);
-
-        if (!collection.Any())
-        {
-            _logger.LogWarning("[{ServiceName}]: Collection of {CollectionType} is empty.", ServiceName, collectionTypeName);
-
-            throw new KeyNotFoundException($"Collection of {collectionTypeName} is empty.");
-        }
-
-        _logger.LogInformation("[{ServiceName}]: Collection was successfully recieved from database.", ServiceName);
-    }
 
     private EventEntity PrepareEntity(EventEntity entity, EventInputDto dto, bool isNeedToUpdate = false)
     {
@@ -235,4 +188,24 @@ public class EventService : IEventService
         return _mapper.Map<IEnumerable<EventOutputDto>>(entity);
     }
     #endregion
+
+    private void PrintUpdatingEntity(EventEntity entity, EventInputDto dto, decimal previousValueOfRegionalBudget, decimal previousValueOfLocalBudget)
+    {
+        _logger.LogInformation("\n{_separator}\n", _separator);
+        _logger.LogInformation("- Current name                      : {entity.Name}\n", entity.Name);
+        _logger.LogInformation("- Name to update                    : {dto.Name}\n", dto.Name);
+        _logger.LogInformation("{_separator}\n", _separator);
+        _logger.LogInformation("- Current total budget              : {entity.TotalBudget}\n", entity.TotalBudget);
+        _logger.LogInformation("- Total budget to update            : {dto.TotalBudget}\n", dto.TotalBudget);
+        _logger.LogInformation("{_separator}\n", _separator);
+        _logger.LogInformation("- Current cofinance rate            : {entity.CofinanceRate}\n", entity.CofinanceRate);
+        _logger.LogInformation("- Cofinance rate to update          : {dto.CofinanceRate}\n", dto.CofinanceRate);
+        _logger.LogInformation("{_separator}\n", _separator);
+        _logger.LogInformation("- Previous value of regional budget : {previousValueOfRegionalBudget}\n", previousValueOfRegionalBudget);
+        _logger.LogInformation("- Current value of regional budget  : {entity.RegionalBudget}\n", entity.RegionalBudget);
+        _logger.LogInformation("{_separator}\n", _separator);
+        _logger.LogInformation("- Previous value of local budget    : {previousValueOfLocalBudget}\n", previousValueOfLocalBudget);
+        _logger.LogInformation("- Current value of local budget     : {entity.LocalBudget}\n", entity.LocalBudget);
+        _logger.LogInformation("{_separator}\n", _separator);
+    }
 }

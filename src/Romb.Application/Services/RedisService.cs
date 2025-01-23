@@ -1,5 +1,4 @@
-﻿using Romb.Application.Dtos;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 using System.Text.Json;
 
 namespace Romb.Application.Services;

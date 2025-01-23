@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using Romb.Application.Exceptions;
+﻿using Romb.Application.Exceptions;
 using StackExchange.Redis;
 using System.Net;
+using System.Text.Json;
 
 namespace Romb.Application.Middleware;
 
@@ -46,6 +46,7 @@ public class ErrorHandlingMiddleware
             EventTotalBudgetIncorrectValueException => HttpStatusCode.BadRequest,
             EventCalculatingBudgetException => HttpStatusCode.BadRequest,
             RedisException => HttpStatusCode.ServiceUnavailable,
+            EntityNotFoundException => HttpStatusCode.NotFound,
             _ => HttpStatusCode.InternalServerError 
         };
 
@@ -55,7 +56,7 @@ public class ErrorHandlingMiddleware
             statusCode = (int)statusCode
         };
 
-        var errorJson = JsonConvert.SerializeObject(errorResponse);
+        var errorJson = JsonSerializer.Serialize(errorResponse);
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
