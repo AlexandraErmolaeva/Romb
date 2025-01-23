@@ -1,6 +1,6 @@
 ﻿using Romb.Application.Exceptions;
 
-namespace Romb.Application.Calculators;
+namespace Romb.Application.Helpers;
 
 public class BudgetCalculator : IBudgetCalculator
 {

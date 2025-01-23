@@ -1,4 +1,4 @@
-﻿namespace Romb.Application.Calculators;
+﻿namespace Romb.Application.Helpers;
 
 public interface IBudgetCalculator
 {

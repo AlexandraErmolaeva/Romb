@@ -11,7 +11,6 @@ public class EventInputDto
 
     [DigitsOnly]
     [AcceptibleValueForDecimal]
-    [CannotContainZeroValue]
     public decimal TotalBudget { get; set; }
 
     [DigitsOnly]

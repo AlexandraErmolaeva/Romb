@@ -32,7 +32,7 @@ public class EventController : ControllerBase
 
         var cacheDtos = await _redisService.GetAsync<IEnumerable<EventOutputDto>>(KeyForAllEvent);
 
-        if (cacheDtos.Any())
+        if (!cacheDtos is not null)
             return Ok(cacheDtos);
 
         var dtos = await _eventService.GetAsync();

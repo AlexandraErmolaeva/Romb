@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Romb.Application.Exceptions;
+using StackExchange.Redis;
 using System.Net;
 
 namespace Romb.Application.Middleware;
@@ -44,6 +45,7 @@ public class ErrorHandlingMiddleware
             EventCofinanceRateIncorrectValueException => HttpStatusCode.BadRequest,
             EventTotalBudgetIncorrectValueException => HttpStatusCode.BadRequest,
             EventCalculatingBudgetException => HttpStatusCode.BadRequest,
+            RedisException => HttpStatusCode.ServiceUnavailable,
             _ => HttpStatusCode.InternalServerError 
         };
 

@@ -1,16 +1,18 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Romb.Application.Calculators;
+using Romb.Application.Helpers;
 using Romb.Application.Dtos;
 using Romb.Application.Entities;
 using Romb.Application.Exceptions;
 using System.Text;
+using Romb.Application.Repositories;
 
 namespace Romb.Application.Services;
 
 public class EventService : IEventService
 {
     private readonly AppDbContext _dbContext;
+    private readonly IEventRepository _eventrepository;
     private readonly IMapper _mapper;
     private readonly IBudgetCalculator _budgetCalculator;
     private readonly IRedisService _redisService;
@@ -21,9 +23,10 @@ public class EventService : IEventService
 
     private readonly string _separator = new string('-', 30);
 
-    public EventService(AppDbContext dbContext, IMapper mapper, IBudgetCalculator budgetCalculator, IRedisService redisService, ILogger<EventService> logger)
+    public EventService(AppDbContext dbContext, IEventRepository eventRepository, IMapper mapper, IBudgetCalculator budgetCalculator, IRedisService redisService, ILogger<EventService> logger)
     {
         _dbContext = dbContext;
+        _eventrepository = eventRepository;
         _mapper = mapper;
         _budgetCalculator = budgetCalculator;
         _redisService = redisService;
@@ -121,6 +124,7 @@ public class EventService : IEventService
 
         var sb = new StringBuilder();
 
+        // TODO: ЗАменить на логгер.
         sb.AppendLine($"\n{_separator}")
             .AppendLine($"- Current name                      : {entity.Name}")
             .AppendLine($"- Name to update                    : {dto.Name}")
@@ -162,7 +166,7 @@ public class EventService : IEventService
         if (dto.CofinanceRate < 0 || dto.CofinanceRate > 100)
             throw new EventCofinanceRateIncorrectValueException("Incorrect cofinance rate.");
 
-        if (dto.TotalBudget < 0 || dto.TotalBudget > decimal.MaxValue)
+        if (dto.TotalBudget <= 0 || dto.TotalBudget > decimal.MaxValue)
             throw new EventTotalBudgetIncorrectValueException("Incorrect total budget value.");
     }
 

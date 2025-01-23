@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Romb.Application.Entities;
 
-namespace Romb.Application;
+namespace Romb.Infrastructure;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public virtual DbSet<EventEntity> Events { get; set; }

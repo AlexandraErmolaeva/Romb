@@ -19,7 +19,7 @@ public class AcceptibleValueForDecimalAttribute : ValidationAttribute
             return false;
 
         if (value is decimal decimalValue)
-            return decimalValue >= Min && decimalValue <= Max;
+            return decimalValue > Min && decimalValue <= Max;
 
         return false;
     }

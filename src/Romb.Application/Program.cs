@@ -1,14 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Romb.Application;
-using Romb.Application.Calculators;
+using Romb.Application.Helpers;
 using Romb.Application.Extensions;
 using Romb.Application.Mappers;
 using Romb.Application.Middleware;
 using Romb.Application.Services;
 using Serilog;
-using StackExchange.Redis;
 using System.Reflection;
+using Romb.Application.Repositories;
 
 var assemblyName = Assembly.GetExecutingAssembly().GetName();
 
@@ -33,6 +32,9 @@ services.AddCustomSwagger(assemblyName.Name);
 
 LogInformation($"- Adding {nameof(IEventService)}");
 services.AddScoped<IEventService, EventService>();
+
+LogInformation($"- Adding {nameof(IEventRepository)}");
+services.AddScoped<IEventRepository, EventRepository>();
 
 LogInformation($"- Adding {nameof(IBudgetCalculator)}");
 services.AddScoped<IBudgetCalculator, BudgetCalculator>();
