@@ -1,49 +1,37 @@
 using Moq;
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Romb.Application.Helpers;
 using Romb.Application.Entities;
-using Romb.Application.Mappers;
-using Romb.Application.Services;
 using Xunit.Abstractions;
 using Romb.Application.Dtos;
 using Moq.EntityFrameworkCore;
+using Romb.Application.Repositories;
 
 namespace Romb.Application.Tests;
 
 public class EventServiceTest
 {
     private readonly Mock<AppDbContext> _mockDbContext;
-    private readonly IMapper _mapper;
-    private readonly Mock<ILogger<EventService>> _mockLogger;
-    private readonly IBudgetCalculator _budgetCalculator;
     private readonly ITestOutputHelper _testOutputHelper;
 
-    private readonly EventService _eventService;
+    private readonly EventRepository _eventRepository;
 
     public EventServiceTest(ITestOutputHelper outputHelper)
     {
-        var config = new MapperConfiguration(cfg => cfg.AddProfile<EventMappingProfile>());
-
         _mockDbContext = new Mock<AppDbContext>(new DbContextOptions<AppDbContext>());
-        _mapper = config.CreateMapper();
-        _mockLogger = new Mock<ILogger<EventService>>();
-        _budgetCalculator = new BudgetCalculator();
-        _eventService = new EventService(_mockDbContext.Object, _mapper, _budgetCalculator, _mockLogger.Object);
+        _eventRepository = new EventRepository(_mockDbContext.Object);
         _testOutputHelper = outputHelper;
     }
 
     [Fact]
     public async Task GetAllEventsAsync_ReturnAllEvents()
     {
-        var entities = CreateEvents().AsQueryable();
+        var mockEntities = CreateEvents().AsQueryable();
 
-        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(entities);
+        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(mockEntities);
 
-        var dtos = await _eventService.GetAsync();
+        var expectedEntities = await _eventRepository.GetAsync();
 
-        AssertEntitiesAndDtosCollectionMatch(entities, dtos);
+        AssertEntitiesCollectionMatch(mockEntities, expectedEntities);
 
         _mockDbContext.Reset();
     }
@@ -51,26 +39,27 @@ public class EventServiceTest
     [Fact]
     public async Task GetEventByIdAsync_ReturnEvent()
     {
-        var eventEntities = CreateEvents().AsQueryable();
+        var mockEntities = CreateEvents().AsQueryable();
 
-        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(eventEntities);
+        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(mockEntities);
 
-        var idForGet = (long)eventEntities.Count() - 1;
-        var entity = eventEntities.First(e => e.Id == idForGet);
+        var idForGet = (long)mockEntities.Count() - 1;
 
-        var dto = await _eventService.GetByIdAsync(idForGet);
+        var mockEntity = mockEntities.First(e => e.Id == idForGet);
 
-        AssertEntityAndDtoMatch(entity, dto);
+        var expectedEntity = await _eventRepository.GetByIdAsync(idForGet);
+
+        AssertEntityMatch(mockEntity, expectedEntity);
 
         _mockDbContext.Reset();
     }
 
-    private void AssertEntitiesAndDtosCollectionMatch(IEnumerable<EventEntity> entities, IEnumerable<EventOutputDto> dtos)
+    private void AssertEntitiesCollectionMatch(IEnumerable<EventEntity> entities, IEnumerable<EventEntity> expectedEntities)
     {
-        Assert.NotNull(dtos);
+        Assert.NotNull(expectedEntities);
 
-        var isMatched = dtos.Count() == entities.Count() &&
-            dtos.Zip(entities, (e, d) =>
+        var isMatched = expectedEntities.Count() == entities.Count() &&
+            expectedEntities.Zip(entities, (e, d) =>
             e.Id == d.Id && e.Name == d.Name && e.CofinanceRate == d.CofinanceRate &&
             e.TotalBudget == d.TotalBudget && e.LocalBudget == d.LocalBudget && e.RegionalBudget == d.RegionalBudget)
             .All(match => match);
@@ -78,13 +67,13 @@ public class EventServiceTest
         Assert.True(isMatched);
     }
 
-    private void AssertEntityAndDtoMatch(EventEntity entity, EventOutputDto dto)
+    private void AssertEntityMatch(EventEntity entity, EventEntity expectedEntity)
     {
-        Assert.NotNull(dto);
+        Assert.NotNull(expectedEntity);
 
-        var isMatched = entity.Id == dto.Id && entity.Name == dto.Name &&
-            entity.TotalBudget == dto.TotalBudget && entity.LocalBudget == dto.LocalBudget &&
-            entity.RegionalBudget == dto.RegionalBudget;
+        var isMatched = entity.Id == expectedEntity.Id && entity.Name == expectedEntity.Name &&
+            entity.TotalBudget == expectedEntity.TotalBudget && entity.LocalBudget == expectedEntity.LocalBudget &&
+            entity.RegionalBudget == expectedEntity.RegionalBudget;
 
         Assert.True(isMatched);
     }
