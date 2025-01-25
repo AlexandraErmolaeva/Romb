@@ -38,7 +38,7 @@ public class EventService : IEventService
     #region [Getting events]
     public async Task<IEnumerable<EventOutputDto>> GetAsync(CancellationToken token = default)
     {
-        _logger.LogInformation("[{ServiceName}]: Getting all events from the database...", ServiceName);
+        _logger.LogInformation("[{ServiceName}]: Getting all events...", ServiceName);
 
         try
         {
@@ -51,7 +51,11 @@ public class EventService : IEventService
                 return cachedDtos;
             }
 
-            var entities = await _eventRepository.GetAsync();
+            token.ThrowIfCancellationRequested();
+
+            var entities = await _eventRepository.GetAsync(token);
+
+            _logger.LogInformation("[{ServiceName}]: Get all events from database.", ServiceName);
 
             var outputDtos = CreateOutputDtosCollection(entities);
 
@@ -66,7 +70,9 @@ public class EventService : IEventService
         {
             _logger.LogError(ex, "[{ServiceName}]: An error has occurred in Redis, data is being loaded from the database.", ServiceName);
 
-            var entities = await _eventRepository.GetAsync();
+            token.ThrowIfCancellationRequested();
+
+            var entities = await _eventRepository.GetAsync(token);
 
             return CreateOutputDtosCollection(entities);
         }
@@ -75,8 +81,10 @@ public class EventService : IEventService
     public async Task<EventOutputDto> GetByIdAsync(long id, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting event from the database with ID: {Id}...", ServiceName, id);
+        
+        token.ThrowIfCancellationRequested();
 
-        var entity = await _eventRepository.GetByIdAsync(id);
+        var entity = await _eventRepository.GetByIdAsync(id, token);
 
         var outputDto = entity is not null ? CreateOutputDtoFromEntity(entity) : throw new EntityNotFoundException("Entity not found.");
 
@@ -95,7 +103,9 @@ public class EventService : IEventService
 
         var entity = PrepareEntity(CreateEntityFromInputDto(dto), dto);
 
-        await _eventRepository.AddAsync(entity);
+        token.ThrowIfCancellationRequested();
+
+        await _eventRepository.AddAsync(entity, token);
 
         _logger.LogInformation("[{ServiceName}]: Event successfully added to the database.", ServiceName);
 
@@ -112,9 +122,11 @@ public class EventService : IEventService
 
         _logger.LogInformation("[{ServiceName}]: Event is being deleted from the database with ID: {Id}...", ServiceName, id);
 
-        var entity = await _eventRepository.GetByIdAsync(id) ?? throw new EntityNotFoundException("Entity not found.");
+        token.ThrowIfCancellationRequested();
 
-        await _eventRepository.DeleteAsync(entity);
+        var entity = await _eventRepository.GetByIdAsync(id, token) ?? throw new EntityNotFoundException("Entity not found.");
+
+        await _eventRepository.DeleteAsync(entity, token);
 
         _logger.LogInformation("[{ServiceName}]: Event has been deleted from the database with ID: {Id}.", ServiceName, id);
     }
@@ -125,7 +137,9 @@ public class EventService : IEventService
 
         _logger.LogInformation("[{ServiceName}]: All events is being deleted from the database...", ServiceName);
 
-        await _eventRepository.DeleteAsync();
+        token.ThrowIfCancellationRequested();
+
+        await _eventRepository.DeleteAsync(token);
 
         _logger.LogInformation("[{ServiceName}]: All events have been deleted from the database.", ServiceName);
     }
@@ -138,7 +152,9 @@ public class EventService : IEventService
 
         _logger.LogInformation("[{ServiceName}]: Updating the event in the database with ID: {Id}...", ServiceName, id);
 
-        var entity = await _eventRepository.GetByIdAsync(id) ?? throw new EntityNotFoundException("Entity not found.");
+        token.ThrowIfCancellationRequested();
+
+        var entity = await _eventRepository.GetByIdAsync(id, token) ?? throw new EntityNotFoundException("Entity not found.");
 
         dto.CheckValidity();
 
@@ -147,7 +163,7 @@ public class EventService : IEventService
 
         _ = PrepareEntity(entity, dto, isNeedToUpdate : true);
 
-        await _eventRepository.UpdateAsync(entity);
+        await _eventRepository.UpdateAsync(entity, token);
 
         PrintUpdatingEntity(entity, dto, previousValueOfRegionalBudget, previousValueOfLocalBudget);
 
@@ -167,22 +183,18 @@ public class EventService : IEventService
     }
 
     #region [Mapping]
-    // Маппим сущность в дто для пользователя, создав ее.
     private EventOutputDto CreateOutputDtoFromEntity(EventEntity entity)
     {
         return _mapper.Map<EventOutputDto>(entity);
     }
-    // Маппим входящее дто от пользователя в сущность, создав ее.
     private EventEntity CreateEntityFromInputDto(EventInputDto dto)
     {
         return _mapper.Map<EventEntity>(dto);
     }
-    // Маппим уже существующую сущность.
     private void MapInputDtoToEntity(EventInputDto dto, EventEntity entity)
     {
         _mapper.Map(dto, entity);
     }
-    // Создаем коллекцию для вывода.
     private IEnumerable<EventOutputDto> CreateOutputDtosCollection(IEnumerable<EventEntity> entity)
     {
         return _mapper.Map<IEnumerable<EventOutputDto>>(entity);
@@ -191,21 +203,21 @@ public class EventService : IEventService
 
     private void PrintUpdatingEntity(EventEntity entity, EventInputDto dto, decimal previousValueOfRegionalBudget, decimal previousValueOfLocalBudget)
     {
-        _logger.LogInformation("\n{_separator}\n", _separator);
-        _logger.LogInformation("- Current name                      : {entity.Name}\n", entity.Name);
-        _logger.LogInformation("- Name to update                    : {dto.Name}\n", dto.Name);
-        _logger.LogInformation("{_separator}\n", _separator);
-        _logger.LogInformation("- Current total budget              : {entity.TotalBudget}\n", entity.TotalBudget);
-        _logger.LogInformation("- Total budget to update            : {dto.TotalBudget}\n", dto.TotalBudget);
-        _logger.LogInformation("{_separator}\n", _separator);
-        _logger.LogInformation("- Current cofinance rate            : {entity.CofinanceRate}\n", entity.CofinanceRate);
-        _logger.LogInformation("- Cofinance rate to update          : {dto.CofinanceRate}\n", dto.CofinanceRate);
-        _logger.LogInformation("{_separator}\n", _separator);
-        _logger.LogInformation("- Previous value of regional budget : {previousValueOfRegionalBudget}\n", previousValueOfRegionalBudget);
-        _logger.LogInformation("- Current value of regional budget  : {entity.RegionalBudget}\n", entity.RegionalBudget);
-        _logger.LogInformation("{_separator}\n", _separator);
-        _logger.LogInformation("- Previous value of local budget    : {previousValueOfLocalBudget}\n", previousValueOfLocalBudget);
-        _logger.LogInformation("- Current value of local budget     : {entity.LocalBudget}\n", entity.LocalBudget);
-        _logger.LogInformation("{_separator}\n", _separator);
+        _logger.LogInformation("{_separator}", _separator);
+        _logger.LogInformation("- Current name                      : {entity.Name}", entity.Name);
+        _logger.LogInformation("- Name to update                    : {dto.Name}", dto.Name);
+        _logger.LogInformation("{_separator}", _separator);
+        _logger.LogInformation("- Current total budget              : {entity.TotalBudget}", entity.TotalBudget);
+        _logger.LogInformation("- Total budget to update            : {dto.TotalBudget}", dto.TotalBudget);
+        _logger.LogInformation("{_separator}", _separator);
+        _logger.LogInformation("- Current cofinance rate            : {entity.CofinanceRate}", entity.CofinanceRate);
+        _logger.LogInformation("- Cofinance rate to update          : {dto.CofinanceRate}", dto.CofinanceRate);
+        _logger.LogInformation("{_separator}", _separator);
+        _logger.LogInformation("- Previous value of regional budget : {previousValueOfRegionalBudget}", previousValueOfRegionalBudget);
+        _logger.LogInformation("- Current value of regional budget  : {entity.RegionalBudget}", entity.RegionalBudget);
+        _logger.LogInformation("{_separator}", _separator);
+        _logger.LogInformation("- Previous value of local budget    : {previousValueOfLocalBudget}", previousValueOfLocalBudget);
+        _logger.LogInformation("- Current value of local budget     : {entity.LocalBudget}", entity.LocalBudget);
+        _logger.LogInformation("{_separator}", _separator);
     }
 }

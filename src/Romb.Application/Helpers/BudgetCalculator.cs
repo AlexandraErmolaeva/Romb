@@ -16,7 +16,7 @@ public class BudgetCalculator : IBudgetCalculator
         var regionalBudget = totalBudget / totalRate * cofinanceRate;
 
         if (regionalBudget < 0)
-            throw new EventCalculatingBudgetException("Value of the regional budget is incorrect.");
+            throw new CalculatingBudgetException("Value of the regional budget is incorrect.");
 
         return regionalBudget;
     }
@@ -26,7 +26,7 @@ public class BudgetCalculator : IBudgetCalculator
         var localBudget = totalBudget - (totalBudget / totalRate * cofinanceRate);
 
         if (localBudget < 0)
-            throw new EventCalculatingBudgetException("Value of the local budget is incorrect.");
+            throw new CalculatingBudgetException("Value of the local budget is incorrect.");
 
         return localBudget;
     }

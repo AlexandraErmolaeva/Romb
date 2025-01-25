@@ -16,41 +16,41 @@ public class EventRepository : IEventRepository
         _dbContext = dbContext;
     }
 
-    public async Task<IEnumerable<EventEntity>> GetAsync()
+    public async Task<IEnumerable<EventEntity>> GetAsync(CancellationToken token = default)
     {
-        return await _dbContext.Events.AsNoTracking().ToListAsync();
+        return await _dbContext.Events.AsNoTracking().ToListAsync(token);
     }
 
-    public async Task<EventEntity> GetByIdAsync(long id)
+    public async Task<EventEntity> GetByIdAsync(long id, CancellationToken token = default)
     {
-        return await _dbContext.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
+        return await _dbContext.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, token);
     }
 
-    public async Task AddAsync(EventEntity entity)
+    public async Task AddAsync(EventEntity entity, CancellationToken token = default)
     {
-        await _dbContext.Events.AddAsync(entity);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.Events.AddAsync(entity, token);
+        await _dbContext.SaveChangesAsync(token);
     }
 
-    public async Task UpdateAsync(EventEntity entity)
+    public async Task UpdateAsync(EventEntity entity, CancellationToken token = default)
     {
         _dbContext.Events.Update(entity);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(token);
     }
 
-    public async Task DeleteAsync(EventEntity entity)
+    public async Task DeleteAsync(EventEntity entity, CancellationToken token = default)
     {
         _dbContext.Events.Remove(entity);
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(token);
     }
 
-    public async Task DeleteAsync()
+    public async Task DeleteAsync(CancellationToken token = default)
     {
-        await _dbContext.Database.ExecuteSqlRawAsync("DELETE FROM Events");
+        await _dbContext.Database.ExecuteSqlRawAsync("DELETE FROM Events", token);
     }
 
-    public async Task<bool> ExistsAsync(long id)
+    public async Task<bool> ExistsAsync(long id, CancellationToken token = default)
     {
-        return await _dbContext.Events.AnyAsync(e => e.Id == id);
+        return await _dbContext.Events.AnyAsync(e => e.Id == id, token);
     }
 }

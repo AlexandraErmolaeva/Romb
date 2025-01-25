@@ -16,7 +16,7 @@ public class RedisService : IRedisService
         _logger = logger;
     }
 
-    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null)
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(key))
         {
@@ -29,9 +29,15 @@ public class RedisService : IRedisService
         {
             var jsonData = JsonSerializer.Serialize(value);
 
-            await _redisDatabase.StringSetAsync(key, jsonData, expiry);
+            await _redisDatabase.StringSetAsync(key, jsonData, expiry).WaitAsync(token);
 
             _logger.LogInformation("[{ServiceName}]: Cache set for key {Key} with expiry {Expiry}.", ServiceName, key, expiry);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("[{ServiceName}]: Operation was cancelled.", ServiceName);
+
+            throw;
         }
         catch (Exception ex)
         {
@@ -41,18 +47,18 @@ public class RedisService : IRedisService
         }
     }
 
-    public async Task<T> GetAsync<T>(string key)
+    public async Task<T> GetAsync<T>(string key, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(key))
         {
-            _logger.LogWarning("[{ServiceName}]: Attempt to set cache with empty key.", ServiceName);
+            _logger.LogWarning("[{ServiceName}]: Attempt to get cache with empty key.", ServiceName);
 
             throw new ArgumentException("Key cannot be empty.");
         }
 
         try
         {
-            var value = await _redisDatabase.StringGetAsync(key);
+            var value = await _redisDatabase.StringGetAsync(key).WaitAsync(token);
 
             if (!value.HasValue)
             {
@@ -65,6 +71,12 @@ public class RedisService : IRedisService
 
             return JsonSerializer.Deserialize<T>(value);
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("[{ServiceName}]: Operation was cancelled.", ServiceName);
+
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError("[{ServiceName}]: Redis get failed for key: {Key}.", ServiceName, key);
@@ -73,42 +85,32 @@ public class RedisService : IRedisService
         }
     }
 
-    public async Task RemoveAsync(string key)
+    public async Task RemoveAsync(string key, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(key))
         {
-            _logger.LogWarning("[{ServiceName}]: Attempt to set cache with empty key.", ServiceName);
+            _logger.LogWarning("[{ServiceName}]: Attempt to remove cache with empty key.", ServiceName);
 
             throw new ArgumentException("Key cannot be empty.");
         }
 
         try
         {
-            await _redisDatabase.KeyDeleteAsync(key);
+            await _redisDatabase.KeyDeleteAsync(key).WaitAsync(token);
 
             _logger.LogInformation("[{ServiceName}]: Cache removed for key: {Key}", ServiceName, key);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("[{ServiceName}]: Operation was cancelled.", ServiceName);
+
+            throw;
         }
         catch (Exception ex)
         {
             _logger.LogError("[{ServiceName}]: Failed to remove cache for key: {Key}", ServiceName, key);
 
             throw new RedisException("Cache deletion error.", ex);
-        }
-    }
-
-    public async Task<bool> ExistsAsync(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-            return false;
-
-        try
-        {
-            return await _redisDatabase.KeyExistsAsync(key);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[{ServiceName}]: Failed to check existence for key {Key}", ServiceName, key);
-            return false;
         }
     }
 }

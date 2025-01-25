@@ -1,16 +1,15 @@
-﻿using Romb.Application.Dtos;
-using Romb.Application.Entities;
+﻿using Romb.Application.Entities;
 
 namespace Romb.Application.Repositories
 {
     public interface IEventRepository
     {
-        Task AddAsync(EventEntity entity);
-        Task DeleteAsync();
-        Task DeleteAsync(EventEntity entity);
-        Task<bool> ExistsAsync(long id);
-        Task<IEnumerable<EventEntity>> GetAsync();
-        Task<EventEntity> GetByIdAsync(long id);
-        Task UpdateAsync(EventEntity entity);
+        Task AddAsync(EventEntity entity, CancellationToken token = default);
+        Task DeleteAsync(CancellationToken token = default);
+        Task DeleteAsync(EventEntity entity, CancellationToken token = default);
+        Task<bool> ExistsAsync(long id, CancellationToken token = default);
+        Task<IEnumerable<EventEntity>> GetAsync(CancellationToken token = default);
+        Task<EventEntity> GetByIdAsync(long id, CancellationToken token = default);
+        Task UpdateAsync(EventEntity entity, CancellationToken token = default);
     }
 }

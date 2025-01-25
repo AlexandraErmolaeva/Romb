@@ -3,9 +3,8 @@ namespace Romb.Application.Services
 {
     public interface IRedisService
     {
-        Task<bool> ExistsAsync(string key);
-        Task<T> GetAsync<T>(string key);
-        Task RemoveAsync(string key);
-        Task SetAsync<T>(string key, T value, TimeSpan? expiry = null);
+        Task<T> GetAsync<T>(string key, CancellationToken token = default);
+        Task RemoveAsync(string key, CancellationToken token = default);
+        Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken token = default);
     }
 }

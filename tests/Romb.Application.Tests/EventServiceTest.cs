@@ -2,7 +2,6 @@ using Moq;
 using Microsoft.EntityFrameworkCore;
 using Romb.Application.Entities;
 using Xunit.Abstractions;
-using Romb.Application.Dtos;
 using Moq.EntityFrameworkCore;
 using Romb.Application.Repositories;
 

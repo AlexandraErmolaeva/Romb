@@ -25,11 +25,11 @@ public class EventController : ControllerBase
 
     #region [GET]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EventOutputDto>>> GetAsync()
+    public async Task<ActionResult<IEnumerable<EventOutputDto>>> GetAsync(CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
-        var dtos = await _eventService.GetAsync();
+        var dtos = await _eventService.GetAsync(token);
 
         _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
         LoggingRequestCompletion();
@@ -39,11 +39,11 @@ public class EventController : ControllerBase
 
     [HttpGet("{id}")]
     [ActionName(nameof(GetByIdAsync))]
-    public async Task<ActionResult<EventOutputDto>> GetByIdAsync(long id)
+    public async Task<ActionResult<EventOutputDto>> GetByIdAsync(long id, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get event with ID: {Id}.", ControllerName, id);
 
-        var dto = await _eventService.GetByIdAsync(id);
+        var dto = await _eventService.GetByIdAsync(id, token);
 
         if (dto is null)
         {
@@ -62,7 +62,7 @@ public class EventController : ControllerBase
 
     #region [POST]
     [HttpPost]
-    public async Task<IActionResult> AddAsync([FromBody] EventInputDto dto)
+    public async Task<IActionResult> AddAsync([FromBody] EventInputDto dto, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to add event.", ControllerName);
 
@@ -78,7 +78,7 @@ public class EventController : ControllerBase
             return BadRequest(new { message = "Validation failed.", errors = validationErrors });
         }
 
-        var outputDto = await _eventService.AddAsync(dto);
+        var outputDto = await _eventService.AddAsync(dto, token);
 
         _logger.LogInformation("[{NameOfController}]: Event has been successfuly added with ID: {Id}.", ControllerName, outputDto.Id);
         LoggingRequestCompletion();
@@ -89,36 +89,26 @@ public class EventController : ControllerBase
 
     #region [PUT]
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] EventInputDto dto)
+    public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] EventInputDto dto, CancellationToken token)
     {
-        try
-        {
-            _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
+        _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
 
-            await _eventService.UpdateByIdAsync(id, dto);
+        await _eventService.UpdateByIdAsync(id, dto, token);
 
-            _logger.LogInformation("[{NameOfController}]: Update request has been successfuly completed for event with ID: {Id}.", ControllerName, id);
-            LoggingRequestCompletion();
+        _logger.LogInformation("[{NameOfController}]: Update request has been successfuly completed for event with ID: {Id}.", ControllerName, id);
+        LoggingRequestCompletion();
 
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogError(ex, "[{NameOfController}]: Event not found with ID: {Id}.", ControllerName, id);
-            LoggingRequestCompletion();
-
-            return NotFound();
-        }
+        return NoContent();
     }
     #endregion
 
     #region [DELETE]
     [HttpDelete]
-    public async Task<IActionResult> DeleteAsync()
+    public async Task<IActionResult> DeleteAsync(CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to delete all events.", ControllerName);
 
-        await _eventService.DeleteAsync();
+        await _eventService.DeleteAsync(token);
 
         _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for all events.", ControllerName);
         LoggingRequestCompletion();
@@ -127,32 +117,21 @@ public class EventController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteByIdAsync(long id)
+    public async Task<IActionResult> DeleteByIdAsync(long id, CancellationToken token)
     {
-        try
-        {
-            _logger.LogInformation("[{NameOfController}]: Recieved a request to delete event with ID: {Id}.", ControllerName, id);
+        _logger.LogInformation("[{NameOfController}]: Recieved a request to delete event with ID: {Id}.", ControllerName, id);
 
-            await _eventService.DeleteByIdAsync(id);
+        await _eventService.DeleteByIdAsync(id, token);
 
-            _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for event with ID: {Id}.", ControllerName, id);
-            LoggingRequestCompletion();
+        _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for event with ID: {Id}.", ControllerName, id);
+        LoggingRequestCompletion();
 
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            _logger.LogError(ex, "[{NameOfController}]: Event not found with ID: {Id}.", ControllerName, id);
-            LoggingRequestCompletion();
-
-            return NotFound();
-        }
+        return NoContent();
     }
     #endregion
 
     private void LoggingRequestCompletion()
     {
-        _logger.LogInformation("[Request is completion]");
         _logger.LogInformation(_separator);
     }
 }

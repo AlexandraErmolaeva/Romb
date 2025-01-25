@@ -42,9 +42,9 @@ public class ErrorHandlingMiddleware
         {
             KeyNotFoundException => HttpStatusCode.NotFound, 
             ArgumentException => HttpStatusCode.BadRequest, 
-            EventCofinanceRateIncorrectValueException => HttpStatusCode.BadRequest,
-            EventTotalBudgetIncorrectValueException => HttpStatusCode.BadRequest,
-            EventCalculatingBudgetException => HttpStatusCode.BadRequest,
+            CofinanceRateIncorrectValueException => HttpStatusCode.BadRequest,
+            TotalBudgetIncorrectValueException => HttpStatusCode.BadRequest,
+            CalculatingBudgetException => HttpStatusCode.BadRequest,
             RedisException => HttpStatusCode.ServiceUnavailable,
             EntityNotFoundException => HttpStatusCode.NotFound,
             _ => HttpStatusCode.InternalServerError 

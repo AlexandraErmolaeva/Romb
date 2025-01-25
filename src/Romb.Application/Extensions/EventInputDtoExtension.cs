@@ -11,9 +11,9 @@ public static class EventInputDtoExtension
             throw new ArgumentException("Name cannot be empty.");
 
         if (dto.CofinanceRate < 0 || dto.CofinanceRate > 100)
-            throw new EventCofinanceRateIncorrectValueException("Incorrect cofinance rate.");
+            throw new CofinanceRateIncorrectValueException("Incorrect cofinance rate.");
 
         if (dto.TotalBudget <= 0 || dto.TotalBudget > decimal.MaxValue)
-            throw new EventTotalBudgetIncorrectValueException("Incorrect total budget value.");
+            throw new TotalBudgetIncorrectValueException("Incorrect total budget value.");
     }
 }
