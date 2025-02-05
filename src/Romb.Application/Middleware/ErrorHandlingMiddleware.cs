@@ -24,6 +24,10 @@ public class ErrorHandlingMiddleware
 
             await _nextDelegate(context);
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Request was cancelled.");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An exception occurred while processing the request: {Path}.", context.Request.Path);
@@ -40,14 +44,13 @@ public class ErrorHandlingMiddleware
     {
         var statusCode = exception switch
         {
-            KeyNotFoundException => HttpStatusCode.NotFound, 
-            ArgumentException => HttpStatusCode.BadRequest, 
+            KeyNotFoundException => HttpStatusCode.NotFound,
+            ArgumentException => HttpStatusCode.BadRequest,
             CofinanceRateIncorrectValueException => HttpStatusCode.BadRequest,
             TotalBudgetIncorrectValueException => HttpStatusCode.BadRequest,
             CalculatingBudgetException => HttpStatusCode.BadRequest,
-            RedisException => HttpStatusCode.ServiceUnavailable,
             EntityNotFoundException => HttpStatusCode.NotFound,
-            _ => HttpStatusCode.InternalServerError 
+            _ => HttpStatusCode.InternalServerError
         };
 
         var errorResponse = new

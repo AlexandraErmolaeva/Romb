@@ -9,9 +9,6 @@ using Romb.Application.Extensions;
 
 namespace Romb.Application.Services;
 
-// TODO: Разобраться с токенами отмены.
-// TODO: транзакции.
-
 public class EventService : IEventService
 {
     private readonly IEventRepository _eventRepository;
@@ -40,53 +37,39 @@ public class EventService : IEventService
     {
         _logger.LogInformation("[{ServiceName}]: Getting all events...", ServiceName);
 
-        try
+        var cachedDtos = await _redisService.GetAsync<IEnumerable<EventOutputDto>>(CacheKey.KeyForAllEvent, token);
+
+        if (cachedDtos?.Any() == true)
         {
-            var cachedDtos = await _redisService.GetAsync<IEnumerable<EventOutputDto>>(CacheKey.KeyForAllEvent);
+            _logger.LogInformation("[{ServiceName}]: Cache hit with key: {Key}.", ServiceName, CacheKey.KeyForAllEvent);
 
-            if (cachedDtos?.Any() == true)
-            {
-                _logger.LogInformation("[{ServiceName}]: Cache hit with key: {Key}", ServiceName, CacheKey.KeyForAllEvent);
-
-                return cachedDtos;
-            }
-
-            token.ThrowIfCancellationRequested();
-
-            var entities = await _eventRepository.GetAsync(token);
-
-            _logger.LogInformation("[{ServiceName}]: Get all events from database.", ServiceName);
-
-            var outputDtos = CreateOutputDtosCollection(entities);
-
-            // TODO: нужно понять, как правильно кешировать, если вдруг и на этом этапе выскочила ошибка.
-            var cacheTime = TimeSpan.FromMinutes(10);
-
-            await _redisService.SetAsync(CacheKey.KeyForAllEvent, outputDtos, cacheTime);
-
-            return outputDtos;
+            return cachedDtos;
         }
-        catch (RedisException ex)
-        {
-            _logger.LogError(ex, "[{ServiceName}]: An error has occurred in Redis, data is being loaded from the database.", ServiceName);
 
-            token.ThrowIfCancellationRequested();
+        token.ThrowIfCancellationRequested();
 
-            var entities = await _eventRepository.GetAsync(token);
+        var entities = await _eventRepository.GetAsync(token);
 
-            return CreateOutputDtosCollection(entities);
-        }
+        _logger.LogInformation("[{ServiceName}]: Get all events from database.", ServiceName);
+
+        var outputDtos = CreateOutputDtosCollection(entities);
+
+        var cacheTime = TimeSpan.FromMinutes(10);
+
+        await _redisService.SetAsync(CacheKey.KeyForAllEvent, outputDtos, cacheTime, token);
+
+        return outputDtos;
     }
 
     public async Task<EventOutputDto> GetByIdAsync(long id, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting event from the database with ID: {Id}...", ServiceName, id);
-        
+
         token.ThrowIfCancellationRequested();
 
-        var entity = await _eventRepository.GetByIdAsync(id, token);
+        var entity = await _eventRepository.GetByIdAsync(id, token) ?? throw new EntityNotFoundException("Entity not found.");
 
-        var outputDto = entity is not null ? CreateOutputDtoFromEntity(entity) : throw new EntityNotFoundException("Entity not found.");
+        var outputDto = CreateOutputDtoFromEntity(entity);
 
         return outputDto;
     }
@@ -95,8 +78,6 @@ public class EventService : IEventService
     #region [Adding events]
     public async Task<EventOutputDto> AddAsync(EventInputDto dto, CancellationToken token = default)
     {
-        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
-
         _logger.LogInformation("[{ServiceName}]: Adding event to the database...", ServiceName);
 
         dto.CheckValidity();
@@ -107,7 +88,7 @@ public class EventService : IEventService
 
         await _eventRepository.AddAsync(entity, token);
 
-        _logger.LogInformation("[{ServiceName}]: Event successfully added to the database.", ServiceName);
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent, token);
 
         var outputDto = CreateOutputDtoFromEntity(entity);
 
@@ -118,8 +99,6 @@ public class EventService : IEventService
     #region [Deleting events]
     public async Task DeleteByIdAsync(long id, CancellationToken token = default)
     {
-        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
-
         _logger.LogInformation("[{ServiceName}]: Event is being deleted from the database with ID: {Id}...", ServiceName, id);
 
         token.ThrowIfCancellationRequested();
@@ -128,28 +107,24 @@ public class EventService : IEventService
 
         await _eventRepository.DeleteAsync(entity, token);
 
-        _logger.LogInformation("[{ServiceName}]: Event has been deleted from the database with ID: {Id}.", ServiceName, id);
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent, token);
     }
 
     public async Task DeleteAsync(CancellationToken token = default)
     {
-        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
-
         _logger.LogInformation("[{ServiceName}]: All events is being deleted from the database...", ServiceName);
 
         token.ThrowIfCancellationRequested();
 
         await _eventRepository.DeleteAsync(token);
 
-        _logger.LogInformation("[{ServiceName}]: All events have been deleted from the database.", ServiceName);
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent, token);
     }
     #endregion
 
     #region [Updating events]
     public async Task UpdateByIdAsync(long id, EventInputDto dto, CancellationToken token = default)
     {
-        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent);
-
         _logger.LogInformation("[{ServiceName}]: Updating the event in the database with ID: {Id}...", ServiceName, id);
 
         token.ThrowIfCancellationRequested();
@@ -161,13 +136,13 @@ public class EventService : IEventService
         var previousValueOfRegionalBudget = entity.RegionalBudget;
         var previousValueOfLocalBudget = entity.LocalBudget;
 
-        _ = PrepareEntity(entity, dto, isNeedToUpdate : true);
+        _ = PrepareEntity(entity, dto, isNeedToUpdate: true);
 
         await _eventRepository.UpdateAsync(entity, token);
 
-        PrintUpdatingEntity(entity, dto, previousValueOfRegionalBudget, previousValueOfLocalBudget);
+        await _redisService.RemoveAsync(CacheKey.KeyForAllEvent, token);
 
-        _logger.LogInformation("[{ServiceName}]: Event has been successfully updated with ID: {Id}", ServiceName, id);
+        PrintUpdatingEntity(entity, dto, previousValueOfRegionalBudget, previousValueOfLocalBudget);
     }
     #endregion
 

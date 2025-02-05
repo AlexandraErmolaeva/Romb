@@ -14,6 +14,6 @@ public class EventInputDto
     public decimal TotalBudget { get; set; }
 
     [DigitsOnly]
-    [Range(0, 100, ErrorMessage = "Cofinance rate is incorrect.")]
+    [Range(0, 100, ErrorMessage = "Incorrect value for field.")]
     public decimal CofinanceRate { get; set; }
 } 

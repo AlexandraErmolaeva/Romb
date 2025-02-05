@@ -16,101 +16,129 @@ public class RedisService : IRedisService
         _logger = logger;
     }
 
-    public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null, CancellationToken token = default)
+    public async Task SetAsync<T>(string key, T value, TimeSpan expiry, CancellationToken token = default)
     {
+        var operationName = nameof(SetAsync);
+
         if (string.IsNullOrWhiteSpace(key))
         {
-            _logger.LogWarning("[{ServiceName}]: Attempt to set cache with empty key.", ServiceName);
+            _logger.LogWarning("[{ServiceName}]: Attempting to set cache with empty key.", ServiceName);
 
             throw new ArgumentException("Key cannot be empty.");
         }
 
-        try
-        {
-            var jsonData = JsonSerializer.Serialize(value);
+        var jsonData = JsonSerializer.Serialize(value);
 
-            await _redisDatabase.StringSetAsync(key, jsonData, expiry).WaitAsync(token);
+        _logger.LogInformation("[{ServiceName}]: Adding data to the Redis cache with key: {Key}, expiry: {Expiry}...", ServiceName, key, expiry);
 
-            _logger.LogInformation("[{ServiceName}]: Cache set for key {Key} with expiry {Expiry}.", ServiceName, key, expiry);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("[{ServiceName}]: Operation was cancelled.", ServiceName);
-
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("[{ServiceName}]: Failed to set cache for key {Key}.", ServiceName, key);
-
-            throw new RedisException("Cache write error.", ex);
-        }
+        await ExecuteWithHandlingAsync(() =>
+            _redisDatabase.StringSetAsync(key, jsonData, expiry).WaitAsync(token),
+            key,
+            operationName,
+            token
+        );
     }
 
     public async Task<T> GetAsync<T>(string key, CancellationToken token = default)
     {
+        var operationName = nameof(GetAsync);
+
         if (string.IsNullOrWhiteSpace(key))
         {
-            _logger.LogWarning("[{ServiceName}]: Attempt to get cache with empty key.", ServiceName);
+            _logger.LogWarning("[{ServiceName}]: Attempting to get cache with empty key.", ServiceName);
 
             throw new ArgumentException("Key cannot be empty.");
         }
 
-        try
+        _logger.LogInformation("[{ServiceName}]: Getting cache from Redis with key: {Key}...", ServiceName, key);
+
+        return await ExecuteWithHandlingAsync(async () =>
         {
             var value = await _redisDatabase.StringGetAsync(key).WaitAsync(token);
 
             if (!value.HasValue)
             {
-                _logger.LogInformation("[{ServiceName}]: Couldn't get the value with key: {Key}.", ServiceName, key);
+                _logger.LogInformation("[{ServiceName}]: Couldn't get the cache with key: {Key}.", ServiceName, key);
 
                 return default;
             }
 
-            _logger.LogInformation("[{ServiceName}]: Cache received successfully for key: {Key}", ServiceName, key);
-
             return JsonSerializer.Deserialize<T>(value);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("[{ServiceName}]: Operation was cancelled.", ServiceName);
-
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("[{ServiceName}]: Redis get failed for key: {Key}.", ServiceName, key);
-
-            throw new RedisException("Cache read error.", ex);
-        }
+        },
+            key,
+            operationName,
+            token
+        );
     }
 
     public async Task RemoveAsync(string key, CancellationToken token = default)
     {
+        var operationName = nameof(RemoveAsync);
+
         if (string.IsNullOrWhiteSpace(key))
         {
-            _logger.LogWarning("[{ServiceName}]: Attempt to remove cache with empty key.", ServiceName);
+            _logger.LogWarning("[{ServiceName}]: Attempting to remove cache with empty key.", ServiceName);
 
             throw new ArgumentException("Key cannot be empty.");
         }
 
+        _logger.LogInformation("[{ServiceName}]: Removing data from the Redis cache with key: {Key}...", ServiceName, key);
+
+        await ExecuteWithHandlingAsync(() =>
+            _redisDatabase.KeyDeleteAsync(key).WaitAsync(token),
+            key,
+            operationName,
+            token
+        );
+    }
+
+    private async Task<T> ExecuteWithHandlingAsync<T>(Func<Task<T>> operation, string key, string operationName, CancellationToken token = default)
+    {
         try
         {
-            await _redisDatabase.KeyDeleteAsync(key).WaitAsync(token);
-
-            _logger.LogInformation("[{ServiceName}]: Cache removed for key: {Key}", ServiceName, key);
+            return await operation();
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("[{ServiceName}]: Operation was cancelled.", ServiceName);
+            _logger.LogWarning("[{ServiceName}]: {OperationName} operation was cancelled.", ServiceName, operationName);
 
             throw;
         }
+        catch (RedisConnectionException ex)
+        {
+            _logger.LogWarning(ex, "[{ServiceName}]: Redis unavailable.", ServiceName);
+
+            return default;
+        }
         catch (Exception ex)
         {
-            _logger.LogError("[{ServiceName}]: Failed to remove cache for key: {Key}", ServiceName, key);
+            _logger.LogError(ex, "[{ServiceName}]: An error occurred in the {OperationName} operation with key: {Key}.", ServiceName, operationName, key);
 
-            throw new RedisException("Cache deletion error.", ex);
+            throw new RedisException("Redis error.", ex);
+        }
+    }
+
+    private async Task ExecuteWithHandlingAsync(Func<Task> operation, string key, string operationName, CancellationToken token = default)
+    {
+        try
+        {
+            await operation();
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("[{ServiceName}]: {OperationName} operation was cancelled.", ServiceName, operationName);
+
+            throw;
+        }
+        catch (RedisConnectionException ex)
+        {
+            _logger.LogWarning(ex, "[{ServiceName}]: Redis unavailable.", ServiceName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[{ServiceName}]: An error occurred in the {OperationName} operation with key: {Key}.", ServiceName, operationName, key);
+
+            throw new RedisException("Redis error.", ex);
         }
     }
 }

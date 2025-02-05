@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Romb.Application.Dtos;
-using Romb.Application.Exceptions;
 using Romb.Application.Services;
 
 namespace Romb.Application.Controllers;
@@ -32,7 +31,6 @@ public class EventController : ControllerBase
         var dtos = await _eventService.GetAsync(token);
 
         _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
-        LoggingRequestCompletion();
 
         return Ok(dtos);
     }
@@ -45,16 +43,7 @@ public class EventController : ControllerBase
 
         var dto = await _eventService.GetByIdAsync(id, token);
 
-        if (dto is null)
-        {
-            _logger.LogError("[{NameOfController}]: Event not found with ID: {Id}.", ControllerName, id);
-            LoggingRequestCompletion();
-
-            return NotFound();
-        }
-
         _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for event with ID: {Id}.", ControllerName, id);
-        LoggingRequestCompletion();
 
         return Ok(dto);
     }
@@ -73,7 +62,6 @@ public class EventController : ControllerBase
                 .ToDictionary(k => k.Value, v => v.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
 
             _logger.LogWarning("[{NameOfController}]: Validation failed for event.", ControllerName);
-            LoggingRequestCompletion();
 
             return BadRequest(new { message = "Validation failed.", errors = validationErrors });
         }
@@ -81,7 +69,6 @@ public class EventController : ControllerBase
         var outputDto = await _eventService.AddAsync(dto, token);
 
         _logger.LogInformation("[{NameOfController}]: Event has been successfuly added with ID: {Id}.", ControllerName, outputDto.Id);
-        LoggingRequestCompletion();
 
         return CreatedAtAction(nameof(GetByIdAsync), new { id = outputDto.Id }, outputDto);
     }
@@ -96,7 +83,6 @@ public class EventController : ControllerBase
         await _eventService.UpdateByIdAsync(id, dto, token);
 
         _logger.LogInformation("[{NameOfController}]: Update request has been successfuly completed for event with ID: {Id}.", ControllerName, id);
-        LoggingRequestCompletion();
 
         return NoContent();
     }
@@ -111,7 +97,6 @@ public class EventController : ControllerBase
         await _eventService.DeleteAsync(token);
 
         _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for all events.", ControllerName);
-        LoggingRequestCompletion();
 
         return NoContent();
     }
@@ -124,15 +109,9 @@ public class EventController : ControllerBase
         await _eventService.DeleteByIdAsync(id, token);
 
         _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for event with ID: {Id}.", ControllerName, id);
-        LoggingRequestCompletion();
 
         return NoContent();
     }
     #endregion
-
-    private void LoggingRequestCompletion()
-    {
-        _logger.LogInformation(_separator);
-    }
 }
 

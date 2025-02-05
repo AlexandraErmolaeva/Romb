@@ -7,18 +7,15 @@ using Romb.Application.Repositories;
 
 namespace Romb.Application.Tests;
 
-public class EventServiceTest
+public class EventRepositoryTest
 {
     private readonly Mock<AppDbContext> _mockDbContext;
-    private readonly ITestOutputHelper _testOutputHelper;
-
     private readonly EventRepository _eventRepository;
 
-    public EventServiceTest(ITestOutputHelper outputHelper)
+    public EventRepositoryTest(ITestOutputHelper outputHelper)
     {
         _mockDbContext = new Mock<AppDbContext>(new DbContextOptions<AppDbContext>());
         _eventRepository = new EventRepository(_mockDbContext.Object);
-        _testOutputHelper = outputHelper;
     }
 
     [Fact]
