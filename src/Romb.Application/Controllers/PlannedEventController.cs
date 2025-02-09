@@ -6,17 +6,16 @@ namespace Romb.Application.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class EventController : ControllerBase
+public class PlannedEventController : ControllerBase
 {
-    private readonly IEventService _eventService;
-    private readonly IRedisService _redisService;
-    private readonly ILogger<EventController> _logger;
+    private readonly IPlannedEventService _eventService;
+    private readonly ILogger<PlannedEventController> _logger;
 
     private readonly string _separator = new string('-', 30);
 
-    private const string ControllerName = nameof(EventController);
+    private const string ControllerName = nameof(PlannedEventController);
 
-    public EventController(IEventService eventService, ILogger<EventController> logger)
+    public PlannedEventController(IPlannedEventService eventService, ILogger<PlannedEventController> logger)
     {
         _eventService = eventService;
         _logger = logger;
@@ -24,7 +23,7 @@ public class EventController : ControllerBase
 
     #region [GET]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EventOutputDto>>> GetAsync(CancellationToken token)
+    public async Task<ActionResult<IEnumerable<PlannedEventOutputDto>>> GetAsync(CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
@@ -37,7 +36,7 @@ public class EventController : ControllerBase
 
     [HttpGet("{id}")]
     [ActionName(nameof(GetByIdAsync))]
-    public async Task<ActionResult<EventOutputDto>> GetByIdAsync(long id, CancellationToken token)
+    public async Task<ActionResult<PlannedEventOutputDto>> GetByIdAsync(long id, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get event with ID: {Id}.", ControllerName, id);
 
@@ -51,7 +50,7 @@ public class EventController : ControllerBase
 
     #region [POST]
     [HttpPost]
-    public async Task<IActionResult> AddAsync([FromBody] EventInputDto dto, CancellationToken token)
+    public async Task<IActionResult> AddAsync([FromBody] PlannedEventInputDto dto, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to add event.", ControllerName);
 
@@ -76,7 +75,7 @@ public class EventController : ControllerBase
 
     #region [PUT]
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] EventInputDto dto, CancellationToken token)
+    public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] PlannedEventInputDto dto, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
 

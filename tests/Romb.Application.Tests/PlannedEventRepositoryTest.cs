@@ -7,23 +7,23 @@ using Romb.Application.Repositories;
 
 namespace Romb.Application.Tests;
 
-public class EventRepositoryTest
+public class PlannedEventRepositoryTest
 {
     private readonly Mock<AppDbContext> _mockDbContext;
-    private readonly EventRepository _eventRepository;
+    private readonly PlannedEventRepository _eventRepository;
 
-    public EventRepositoryTest(ITestOutputHelper outputHelper)
+    public PlannedEventRepositoryTest(ITestOutputHelper outputHelper)
     {
         _mockDbContext = new Mock<AppDbContext>(new DbContextOptions<AppDbContext>());
-        _eventRepository = new EventRepository(_mockDbContext.Object);
+        _eventRepository = new PlannedEventRepository(_mockDbContext.Object);
     }
 
     [Fact]
     public async Task GetAllEventsAsync_ReturnAllEvents()
     {
-        var mockEntities = CreateEvents().AsQueryable();
+        var mockEntities = CreateEntities().AsQueryable();
 
-        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(mockEntities);
+        _mockDbContext.Setup(db => db.PlannedEvents).ReturnsDbSet(mockEntities);
 
         var expectedEntities = await _eventRepository.GetAsync();
 
@@ -35,9 +35,9 @@ public class EventRepositoryTest
     [Fact]
     public async Task GetEventByIdAsync_ReturnEvent()
     {
-        var mockEntities = CreateEvents().AsQueryable();
+        var mockEntities = CreateEntities().AsQueryable();
 
-        _mockDbContext.Setup(db => db.Events).ReturnsDbSet(mockEntities);
+        _mockDbContext.Setup(db => db.PlannedEvents).ReturnsDbSet(mockEntities);
 
         var idForGet = (long)mockEntities.Count() - 1;
 
@@ -50,46 +50,46 @@ public class EventRepositoryTest
         _mockDbContext.Reset();
     }
 
-    private void AssertEntitiesCollectionMatch(IEnumerable<EventEntity> entities, IEnumerable<EventEntity> expectedEntities)
+    private void AssertEntitiesCollectionMatch(IEnumerable<PlannedEventEntity> entities, IEnumerable<PlannedEventEntity> expectedEntities)
     {
         Assert.NotNull(expectedEntities);
 
         var isMatched = expectedEntities.Count() == entities.Count() &&
             expectedEntities.Zip(entities, (e, d) =>
-            e.Id == d.Id && e.Name == d.Name && e.CofinanceRate == d.CofinanceRate &&
-            e.TotalBudget == d.TotalBudget && e.LocalBudget == d.LocalBudget && e.RegionalBudget == d.RegionalBudget)
+            e.Id == d.Id && e.Name == d.Name && e.PlannedCofinanceRate == d.PlannedCofinanceRate &&
+            e.TotalBudget == d.TotalBudget && e.PlannedLocalBudget == d.PlannedLocalBudget && e.PlannedRegionalBudget == d.PlannedRegionalBudget)
             .All(match => match);
 
         Assert.True(isMatched);
     }
 
-    private void AssertEntityMatch(EventEntity entity, EventEntity expectedEntity)
+    private void AssertEntityMatch(PlannedEventEntity entity, PlannedEventEntity expectedEntity)
     {
         Assert.NotNull(expectedEntity);
 
         var isMatched = entity.Id == expectedEntity.Id && entity.Name == expectedEntity.Name &&
-            entity.TotalBudget == expectedEntity.TotalBudget && entity.LocalBudget == expectedEntity.LocalBudget &&
-            entity.RegionalBudget == expectedEntity.RegionalBudget;
+            entity.TotalBudget == expectedEntity.TotalBudget && entity.PlannedLocalBudget == expectedEntity.PlannedLocalBudget &&
+            entity.PlannedRegionalBudget == expectedEntity.PlannedRegionalBudget;
 
         Assert.True(isMatched);
     }
 
-    private List<EventEntity> CreateEvents()
+    private List<PlannedEventEntity> CreateEntities()
     {
-        var entities = new List<EventEntity>();
+        var entities = new List<PlannedEventEntity>();
 
         for (int i = 1; i <= 10; i++)
         {
-            var entity = new EventEntity
+            var entity = new PlannedEventEntity
             {
                 Id = i,
                 Name = "Event" + i,
-                CofinanceRate = 100 - i,
+                PlannedCofinanceRate = 100 - i,
                 TotalBudget = 1000 * i
             };
 
-            entity.RegionalBudget = entity.TotalBudget / 100 * entity.CofinanceRate;
-            entity.LocalBudget = entity.TotalBudget - (entity.TotalBudget / 100 * entity.CofinanceRate);
+            entity.PlannedRegionalBudget = entity.TotalBudget / 100 * entity.PlannedCofinanceRate;
+            entity.PlannedLocalBudget = entity.TotalBudget - (entity.TotalBudget / 100 * entity.PlannedCofinanceRate);
 
             entities.Add(entity);
         }

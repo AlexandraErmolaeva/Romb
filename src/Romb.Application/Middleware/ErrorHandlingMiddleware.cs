@@ -46,8 +46,7 @@ public class ErrorHandlingMiddleware
         {
             KeyNotFoundException => HttpStatusCode.NotFound,
             ArgumentException => HttpStatusCode.BadRequest,
-            CofinanceRateIncorrectValueException => HttpStatusCode.BadRequest,
-            TotalBudgetIncorrectValueException => HttpStatusCode.BadRequest,
+            IncorrectValueException => HttpStatusCode.BadRequest,
             CalculatingBudgetException => HttpStatusCode.BadRequest,
             EntityNotFoundException => HttpStatusCode.NotFound,
             _ => HttpStatusCode.InternalServerError
@@ -61,7 +60,7 @@ public class ErrorHandlingMiddleware
 
         var errorJson = JsonSerializer.Serialize(errorResponse);
 
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = "application/json ";
         context.Response.StatusCode = (int)statusCode;
 
         return context.Response.WriteAsync(errorJson);

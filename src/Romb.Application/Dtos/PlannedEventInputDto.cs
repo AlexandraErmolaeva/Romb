@@ -3,11 +3,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Romb.Application.Dtos;
 
-public class EventInputDto
+public class PlannedEventInputDto
 {
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters.")]
     public string Name { get; set; }
+
+    [Required(ErrorMessage = "Name is required.")]
+    [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters.")]
+    public string TargetCode { get; set; }
 
     [DigitsOnly]
     [AcceptibleValueForDecimal]
@@ -15,5 +19,5 @@ public class EventInputDto
 
     [DigitsOnly]
     [Range(0, 100, ErrorMessage = "Incorrect value for field.")]
-    public decimal CofinanceRate { get; set; }
+    public decimal PlannedCofinanceRate { get; set; }
 } 

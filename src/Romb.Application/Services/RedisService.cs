@@ -24,7 +24,7 @@ public class RedisService : IRedisService
         {
             _logger.LogWarning("[{ServiceName}]: Attempting to set cache with empty key.", ServiceName);
 
-            throw new ArgumentException("Key cannot be empty.");
+            return;
         }
 
         var jsonData = JsonSerializer.Serialize(value);
@@ -47,7 +47,7 @@ public class RedisService : IRedisService
         {
             _logger.LogWarning("[{ServiceName}]: Attempting to get cache with empty key.", ServiceName);
 
-            throw new ArgumentException("Key cannot be empty.");
+            return default;
         }
 
         _logger.LogInformation("[{ServiceName}]: Getting cache from Redis with key: {Key}...", ServiceName, key);
@@ -79,7 +79,7 @@ public class RedisService : IRedisService
         {
             _logger.LogWarning("[{ServiceName}]: Attempting to remove cache with empty key.", ServiceName);
 
-            throw new ArgumentException("Key cannot be empty.");
+            return;
         }
 
         _logger.LogInformation("[{ServiceName}]: Removing data from the Redis cache with key: {Key}...", ServiceName, key);
@@ -100,7 +100,7 @@ public class RedisService : IRedisService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("[{ServiceName}]: {OperationName} operation was cancelled.", ServiceName, operationName);
+            _logger.LogInformation("[{ServiceName}]: {OperationName} operation was cancelled.", ServiceName, operationName);
 
             throw;
         }
@@ -112,9 +112,9 @@ public class RedisService : IRedisService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[{ServiceName}]: An error occurred in the {OperationName} operation with key: {Key}.", ServiceName, operationName, key);
+            _logger.LogWarning(ex, "[{ServiceName}]: An error occurred in the {OperationName} operation with key: {Key}.", ServiceName, operationName, key);
 
-            throw new RedisException("Redis error.", ex);
+            return default;
         }
     }
 
@@ -126,7 +126,7 @@ public class RedisService : IRedisService
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("[{ServiceName}]: {OperationName} operation was cancelled.", ServiceName, operationName);
+            _logger.LogInformation("[{ServiceName}]: {OperationName} operation was cancelled.", ServiceName, operationName);
 
             throw;
         }
@@ -136,9 +136,7 @@ public class RedisService : IRedisService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[{ServiceName}]: An error occurred in the {OperationName} operation with key: {Key}.", ServiceName, operationName, key);
-
-            throw new RedisException("Redis error.", ex);
+            _logger.LogWarning(ex, "[{ServiceName}]: An error occurred in the {OperationName} operation with key: {Key}.", ServiceName, operationName, key);
         }
     }
 }

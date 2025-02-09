@@ -30,17 +30,23 @@ services.AddCustomRedis(configuration);
 LogInformation("- Adding Swagger...");
 services.AddCustomSwagger(assemblyName.Name);
 
-LogInformation($"- Adding {nameof(IEventService)}");
-services.AddScoped<IEventService, EventService>();
+LogInformation($"- Adding {nameof(IPlannedEventService)}");
+services.AddScoped<IPlannedEventService, PlannedEventService>();
 
-LogInformation($"- Adding {nameof(IEventRepository)}");
-services.AddScoped<IEventRepository, EventRepository>();
+LogInformation($"- Adding {nameof(IActualEventService)}");
+services.AddScoped<IActualEventService, ActualEventService>();
+
+LogInformation($"- Adding {nameof(IPlannedEventRepository)}");
+services.AddScoped<IPlannedEventRepository, PlannedEventRepository>();
+
+LogInformation($"- Adding {nameof(IActualEventRepository)}");
+services.AddScoped<IActualEventRepository, ActualEventRepository>();
 
 LogInformation($"- Adding {nameof(IBudgetCalculator)}");
 services.AddScoped<IBudgetCalculator, BudgetCalculator>();
 
 LogInformation("- Adding AutoMapper...");
-services.AddAutoMapper(typeof(EventMappingProfile));
+services.AddAutoMapper(typeof(PlanedEventMappingProfile));
 
 LogInformation("- Adding Controllers...");
 services.AddControllers();
