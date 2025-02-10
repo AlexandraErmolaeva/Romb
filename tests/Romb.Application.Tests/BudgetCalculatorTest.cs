@@ -9,7 +9,7 @@ public class BudgetCalculatorTest
 
     public BudgetCalculatorTest()
     {
-       _budgetCalculator = new BudgetCalculator();
+        _budgetCalculator = new BudgetCalculator();
     }
 
     #region [CalculatePlannedRegionalBudget]
@@ -38,7 +38,7 @@ public class BudgetCalculatorTest
     public void CalculatePlannedRegionalBudget_ReturnZero()
     {
         var totalBudget = 1000M;
-        var cofinanceRate = 0M; 
+        var cofinanceRate = 0M;
 
         var result = _budgetCalculator.CalculatePlannedRegionalBudget(totalBudget, cofinanceRate);
 
@@ -97,8 +97,22 @@ public class BudgetCalculatorTest
         var cofinanceRate = 50M;
 
         var result = _budgetCalculator.CalculatePlannedLocalBudget(totalBudget, cofinanceRate);
+        var expectedResult = totalBudget / 2;
 
-        Assert.Equal(totalBudget / 2, result);
+        Assert.Equal(expectedResult, result);
     }
     #endregion
+
+    [Fact]
+    public void CalculateActualCofinanceRateAndRegionalBudget_ReturnCorrectValue()
+    {
+        var totalBudget = 2250000M;
+        var plannedCofinanceRate = 89M;
+        var plannedRegionalBudget = 2000000M;
+        var completedWorksBudget = 1992107M; 
+
+        var (actualCofinanceRate, actualRegionalBudget) = _budgetCalculator.CalculateActualCofinanceRateAndRegionalBudget(totalBudget, plannedCofinanceRate, plannedRegionalBudget, completedWorksBudget);
+
+        Assert.Equal(177076.78M, actualRegionalBudget);
+    }
 }

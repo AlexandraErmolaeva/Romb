@@ -2,6 +2,7 @@
 using Romb.Application.Dtos;
 using Romb.Application.Entities;
 using Romb.Application.Exceptions;
+using Romb.Application.Extensions;
 using Romb.Application.Helpers;
 using Romb.Application.Repositories;
 
@@ -52,12 +53,28 @@ public class ActualEventService : IActualEventService
 
         return outputDto;
     }
+
+    public async Task<IEnumerable<ActualEventOutputDto>> GetByTargetCodeAsync(string targetCode, CancellationToken token = default)
+    {
+        if (targetCode is null || string.IsNullOrWhiteSpace(targetCode))
+            throw new ArgumentException("Target code is incorrect.");
+
+        _logger.LogInformation("[{ServiceName}]: Getting events from the database with target code: {TargetCode}...", ServiceName, targetCode);
+
+        var entities = await _actualEventRepository.GetByTargetCodeAsync(targetCode, token) ?? throw new EntityNotFoundException("Entities not found.");
+
+        var outputDto = CreateOutputDtosCollection(entities);
+
+        return outputDto;
+    }
     #endregion
 
     #region [Adding events]
     public async Task<ActualEventOutputDto> AddAsync(ActualEventInputDto dto, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Adding event to the database...", ServiceName);
+
+        dto.CheckValidity();
 
         token.ThrowIfCancellationRequested();
 
@@ -70,6 +87,29 @@ public class ActualEventService : IActualEventService
         var outputDto = CreateOutputDtoFromEntity(entity);
 
         return outputDto;
+    }
+    #endregion
+
+    #region [Updating event]
+    public async Task UpdateByTargetCodeAsync(string targetCode, CancellationToken token = default)
+    {
+        if (targetCode is null || string.IsNullOrWhiteSpace(targetCode))
+            throw new ArgumentException("Target code is incorrect.");
+
+        _logger.LogInformation("[{ServiceName}]: Getting events from the database with target code: {TargetCode}...", ServiceName, targetCode);
+
+        var entities = await _actualEventRepository.GetByTargetCodeAsync(targetCode, token) ?? throw new EntityNotFoundException("Entities not found.");
+
+        var firstEntity = entities.OrderBy(e => e.Id).First();
+
+        var firstEntityActualCofinanceRate = firstEntity.ActualCofinanceRate;
+
+        var entitiesToUpdate = entities.OrderBy(e => e.Id).Skip(1);
+
+        foreach (var entity in entitiesToUpdate)
+            ForciblyPrepareEntity(entity, firstEntityActualCofinanceRate);
+
+        await _actualEventRepository.UpdateCollectionAsync(entities, token);
     }
     #endregion
 
@@ -87,6 +127,17 @@ public class ActualEventService : IActualEventService
         entity.ActualCofinanceRate = actualCofinanceRate;
         entity.ActualRegionalBudget = actualRegionalBudget;
         entity.ActualLocalBudget = _budgetCalculator.CalculateActualLocalBudget(completedWorksBudget, actualRegionalBudget);
+
+        return entity;
+    }
+
+    private ActualEventEntity ForciblyPrepareEntity(ActualEventEntity entity, decimal actualCofinanceRate)
+    {
+        entity.ActualCofinanceRate = actualCofinanceRate;
+        var completedWorksBudget = entity.CompletedWorksBudget;
+
+        entity.ActualLocalBudget = _budgetCalculator.ForciblyCalculateActualLocalBudgetBudgetWithCofinanceRate(completedWorksBudget, actualCofinanceRate);
+        entity.ActualRegionalBudget = _budgetCalculator.ForciblyCalculateActualRegionalBudgetWithCofinanceRate(completedWorksBudget, actualCofinanceRate);
 
         return entity;
     }

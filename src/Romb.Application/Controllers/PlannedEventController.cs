@@ -8,16 +8,16 @@ namespace Romb.Application.Controllers;
 [ApiController]
 public class PlannedEventController : ControllerBase
 {
-    private readonly IPlannedEventService _eventService;
+    private readonly IPlannedEventService _plannedEventService;
     private readonly ILogger<PlannedEventController> _logger;
 
     private readonly string _separator = new string('-', 30);
 
     private const string ControllerName = nameof(PlannedEventController);
 
-    public PlannedEventController(IPlannedEventService eventService, ILogger<PlannedEventController> logger)
+    public PlannedEventController(IPlannedEventService plannedEventService, ILogger<PlannedEventController> logger)
     {
-        _eventService = eventService;
+        _plannedEventService = plannedEventService;
         _logger = logger;
     }
 
@@ -27,7 +27,7 @@ public class PlannedEventController : ControllerBase
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
-        var dtos = await _eventService.GetAsync(token);
+        var dtos = await _plannedEventService.GetAsync(token);
 
         _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for all events.", ControllerName);
 
@@ -40,7 +40,7 @@ public class PlannedEventController : ControllerBase
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get event with ID: {Id}.", ControllerName, id);
 
-        var dto = await _eventService.GetByIdAsync(id, token);
+        var dto = await _plannedEventService.GetByIdAsync(id, token);
 
         _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for event with ID: {Id}.", ControllerName, id);
 
@@ -65,7 +65,7 @@ public class PlannedEventController : ControllerBase
             return BadRequest(new { message = "Validation failed.", errors = validationErrors });
         }
 
-        var outputDto = await _eventService.AddAsync(dto, token);
+        var outputDto = await _plannedEventService.AddAsync(dto, token);
 
         _logger.LogInformation("[{NameOfController}]: Event has been successfuly added with ID: {Id}.", ControllerName, outputDto.Id);
 
@@ -79,7 +79,7 @@ public class PlannedEventController : ControllerBase
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
 
-        await _eventService.UpdateByIdAsync(id, dto, token);
+        await _plannedEventService.UpdateByIdAsync(id, dto, token);
 
         _logger.LogInformation("[{NameOfController}]: Update request has been successfuly completed for event with ID: {Id}.", ControllerName, id);
 
@@ -93,7 +93,7 @@ public class PlannedEventController : ControllerBase
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to delete all events.", ControllerName);
 
-        await _eventService.DeleteAsync(token);
+        await _plannedEventService.DeleteAsync(token);
 
         _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for all events.", ControllerName);
 
@@ -105,7 +105,7 @@ public class PlannedEventController : ControllerBase
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to delete event with ID: {Id}.", ControllerName, id);
 
-        await _eventService.DeleteByIdAsync(id, token);
+        await _plannedEventService.DeleteByIdAsync(id, token);
 
         _logger.LogInformation("[{NameOfController}]: Deletion request has been successfully completed for event with ID: {Id}.", ControllerName, id);
 

@@ -21,6 +21,17 @@ public class ActualEventController : ControllerBase
         _logger = logger;
     }
 
+    #region [GET]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ActualEventOutputDto>>> GetAsync(CancellationToken token)
+    {
+        _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
+
+        var dtos = await _actualEventService.GetAsync(token);
+
+        return Ok(dtos);
+    }
+
     [HttpGet("{id}")]
     [ActionName(nameof(GetByIdAsync))]
     public async Task<ActionResult<ActualEventOutputDto>> GetByIdAsync(long id, CancellationToken token)
@@ -33,6 +44,19 @@ public class ActualEventController : ControllerBase
 
         return Ok(dto);
     }
+
+    [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<ActualEventOutputDto>>> GetByTargetCode([FromQuery] string targetCode, CancellationToken token)
+    {
+        _logger.LogInformation("[{NameOfController}]: Recieved a request to get events with target code: {TargetCode}.", ControllerName, targetCode);
+
+        var dto = await _actualEventService.GetByTargetCodeAsync(targetCode, token);
+
+        _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for events with target code: {Id}.", ControllerName, targetCode);
+
+        return Ok(dto);
+    }
+    #endregion
 
     #region [POST]
     [HttpPost]
@@ -47,4 +71,16 @@ public class ActualEventController : ControllerBase
         return CreatedAtAction(nameof(GetByIdAsync), new {id = outputDto.Id}, outputDto);
     }
     #endregion
+
+    [HttpPut]
+    public async Task<IActionResult> UpdateAsyncByTargetCode([FromQuery] string targetCode, CancellationToken token)
+    {
+        _logger.LogInformation("[{NameOfController}]: Recieved a request to update events with target code: {TargetCode}.", ControllerName, targetCode);
+
+        await _actualEventService.UpdateByTargetCodeAsync(targetCode, token);
+
+        _logger.LogInformation("[{NameOfController}]: Receipt request was successfully completed for events with target code: {Id}.", ControllerName, targetCode);
+
+        return NoContent();
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Romb.Application.Entities;
 
 namespace Romb.Application.Repositories;
@@ -22,6 +23,14 @@ public class ActualEventRepository : IActualEventRepository
         return await _dbContext.ActualEvents.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, token);
     }
 
+    public async Task<IEnumerable<ActualEventEntity>> GetByTargetCodeAsync(string targetCode, CancellationToken token = default)
+    {
+        var entities = await _dbContext.ActualEvents.Where(a => a.PlannedEvent.TargetCode == targetCode)
+            .ToListAsync(token);
+
+        return entities;
+    }
+
     public async Task AddAsync(ActualEventEntity entity, CancellationToken token = default)
     {
         _dbContext.Attach(entity.PlannedEvent);
@@ -30,4 +39,9 @@ public class ActualEventRepository : IActualEventRepository
         await _dbContext.SaveChangesAsync(token);
     }
 
+    public async Task UpdateCollectionAsync(IEnumerable<ActualEventEntity> entities, CancellationToken token = default)
+    {
+        _dbContext.ActualEvents.UpdateRange(entities);
+        await _dbContext.SaveChangesAsync(token);
+    }
 }

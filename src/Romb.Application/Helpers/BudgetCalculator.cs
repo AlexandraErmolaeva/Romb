@@ -8,22 +8,22 @@ public class BudgetCalculator : IBudgetCalculator
 
     public decimal CalculatePlannedRegionalBudget(decimal totalBudget, decimal cofinanceRate)
     {
-        var regionalBudget = totalBudget / totalRate * cofinanceRate;
+        var regionalBudget = (totalBudget / totalRate) * cofinanceRate;
 
         if (regionalBudget < 0)
             throw new CalculatingBudgetException("Value of the regional budget is incorrect.");
 
-        return regionalBudget;
+        return Math.Round(regionalBudget, 2, MidpointRounding.AwayFromZero);
     }
 
     public decimal CalculatePlannedLocalBudget(decimal totalBudget, decimal cofinanceRate)
     {
-        var localBudget = totalBudget - totalBudget / totalRate * cofinanceRate;
+        var localBudget = totalBudget - (totalBudget / totalRate * cofinanceRate);
 
         if (localBudget < 0)
             throw new CalculatingBudgetException("Value of the local budget is incorrect.");
 
-        return localBudget;
+        return Math.Round(localBudget, 2, MidpointRounding.AwayFromZero);
     }
 
     public (decimal actualCofinanceRate, decimal actualRegionalBudget) CalculateActualCofinanceRateAndRegionalBudget(decimal totalBudget,
@@ -31,9 +31,7 @@ public class BudgetCalculator : IBudgetCalculator
                                                                                                                      decimal plannedRegionalBudget,
                                                                                                                      decimal completedWorksBudget)
     {
-        var tempActualRegionalBudget = CalculateActualLRegionalBudget(totalBudget, plannedRegionalBudget, completedWorksBudget);
-
-        var actualRegionalBudget = Math.Round(tempActualRegionalBudget, 2);
+        var actualRegionalBudget = CalculateActualLRegionalBudget(totalBudget, plannedRegionalBudget, completedWorksBudget);
 
         var actualCofinanceRate = actualRegionalBudget / completedWorksBudget * totalRate;
 
@@ -59,8 +57,25 @@ public class BudgetCalculator : IBudgetCalculator
         if (actualLocalBudget < 0)
             throw new CalculatingBudgetException("Value of the local budget is incorrect.");
 
-        return actualLocalBudget;
+        return Math.Round(actualLocalBudget, 2, MidpointRounding.AwayFromZero);
     }
+
+    public decimal ForciblyCalculateActualRegionalBudgetWithCofinanceRate(decimal completedWorksBudget,
+                                                                          decimal cofinanceRate)
+    {
+        var actualRegionalBudget = completedWorksBudget * cofinanceRate / totalRate;
+
+        return Math.Round(actualRegionalBudget, 2, MidpointRounding.AwayFromZero);
+    }
+
+    public decimal ForciblyCalculateActualLocalBudgetBudgetWithCofinanceRate(decimal completedWorksBudget,
+                                                                             decimal cofinanceRate)
+    {
+        var actualLocalBudget = completedWorksBudget - completedWorksBudget * cofinanceRate / totalRate;
+
+        return Math.Round(actualLocalBudget, 2, MidpointRounding.AwayFromZero);
+    }
+
 
     private decimal CalculateActualLRegionalBudget(decimal totalBudget, decimal plannedRegionalBudget, decimal completedWorksBudget)
     {
@@ -69,7 +84,7 @@ public class BudgetCalculator : IBudgetCalculator
         if (actualRegionalBudget < 0)
             throw new CalculatingBudgetException("Value of the regional budget is incorrect.");
 
-        return actualRegionalBudget;
+        return Math.Round(actualRegionalBudget, 2, MidpointRounding.AwayFromZero);
     }
 }
 
