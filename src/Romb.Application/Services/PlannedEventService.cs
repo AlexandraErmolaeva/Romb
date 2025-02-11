@@ -155,8 +155,8 @@ public class PlannedEventService : IPlannedEventService
         var totalBudget = entity.TotalBudget;
         var plannedCofinanceRate = entity.PlannedCofinanceRate;
 
-        entity.PlannedRegionalBudget = _budgetCalculator.CalculatePlannedRegionalBudget(totalBudget, plannedCofinanceRate);
-        entity.PlannedLocalBudget = _budgetCalculator.CalculatePlannedLocalBudget(totalBudget, plannedCofinanceRate);
+        entity.PlannedRegionalBudget = _budgetCalculator.CalculateRegionalBudget(totalBudget, plannedCofinanceRate);
+        entity.PlannedLocalBudget = _budgetCalculator.CalculateLocalBudget(totalBudget, plannedCofinanceRate);
 
         return entity;
     }

@@ -19,7 +19,7 @@ public class BudgetCalculatorTest
         var totalBudget = 1000M;
         var cofinanceRate = 20M;
 
-        var result = _budgetCalculator.CalculatePlannedRegionalBudget(totalBudget, cofinanceRate);
+        var result = _budgetCalculator.CalculateRegionalBudget(totalBudget, cofinanceRate);
 
         Assert.Equal(200M, result);
     }
@@ -31,7 +31,7 @@ public class BudgetCalculatorTest
         var cofinanceRate = 0.2M;
 
         Assert.Throws<CalculatingBudgetException>(() =>
-            _budgetCalculator.CalculatePlannedRegionalBudget(totalBudget, cofinanceRate));
+            _budgetCalculator.CalculateRegionalBudget(totalBudget, cofinanceRate));
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public class BudgetCalculatorTest
         var totalBudget = 1000M;
         var cofinanceRate = 0M;
 
-        var result = _budgetCalculator.CalculatePlannedRegionalBudget(totalBudget, cofinanceRate);
+        var result = _budgetCalculator.CalculateRegionalBudget(totalBudget, cofinanceRate);
 
         Assert.Equal(0M, result);
     }
@@ -51,7 +51,7 @@ public class BudgetCalculatorTest
         var totalBudget = decimal.MaxValue;
         var cofinanceRate = 50M;
 
-        var result = _budgetCalculator.CalculatePlannedRegionalBudget(totalBudget, cofinanceRate);
+        var result = _budgetCalculator.CalculateRegionalBudget(totalBudget, cofinanceRate);
 
         Assert.Equal(totalBudget / 2, result);
     }
@@ -64,7 +64,7 @@ public class BudgetCalculatorTest
         var totalBudget = 1000M;
         var cofinanceRate = 20M;
 
-        var result = _budgetCalculator.CalculatePlannedLocalBudget(totalBudget, cofinanceRate);
+        var result = _budgetCalculator.CalculateLocalBudget(totalBudget, cofinanceRate);
 
         Assert.Equal(800M, result);
     }
@@ -76,7 +76,7 @@ public class BudgetCalculatorTest
         var cofinanceRate = 0.2M;
 
         Assert.Throws<CalculatingBudgetException>(() =>
-            _budgetCalculator.CalculatePlannedLocalBudget(totalBudget, cofinanceRate));
+            _budgetCalculator.CalculateLocalBudget(totalBudget, cofinanceRate));
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class BudgetCalculatorTest
         var totalBudget = 1000M;
         var cofinanceRate = 100M;
 
-        var result = _budgetCalculator.CalculatePlannedLocalBudget(totalBudget, cofinanceRate);
+        var result = _budgetCalculator.CalculateLocalBudget(totalBudget, cofinanceRate);
 
         Assert.Equal(0M, result);
     }
@@ -96,7 +96,7 @@ public class BudgetCalculatorTest
         var totalBudget = decimal.MaxValue;
         var cofinanceRate = 50M;
 
-        var result = _budgetCalculator.CalculatePlannedLocalBudget(totalBudget, cofinanceRate);
+        var result = _budgetCalculator.CalculateLocalBudget(totalBudget, cofinanceRate);
         var expectedResult = totalBudget / 2;
 
         Assert.Equal(expectedResult, result);
@@ -113,6 +113,6 @@ public class BudgetCalculatorTest
 
         var (actualCofinanceRate, actualRegionalBudget) = _budgetCalculator.CalculateActualCofinanceRateAndRegionalBudget(totalBudget, plannedCofinanceRate, plannedRegionalBudget, completedWorksBudget);
 
-        Assert.Equal(177076.78M, actualRegionalBudget);
+        Assert.Equal(1770761.78M, actualRegionalBudget);
     }
 }

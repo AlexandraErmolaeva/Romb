@@ -61,6 +61,8 @@ public class ActualEventService : IActualEventService
 
         _logger.LogInformation("[{ServiceName}]: Getting events from the database with target code: {TargetCode}...", ServiceName, targetCode);
 
+        token.ThrowIfCancellationRequested();
+
         var entities = await _actualEventRepository.GetByTargetCodeAsync(targetCode, token) ?? throw new EntityNotFoundException("Entities not found.");
 
         var outputDto = CreateOutputDtosCollection(entities);
@@ -82,6 +84,8 @@ public class ActualEventService : IActualEventService
 
         var entity = PrepareEntity(plannedEvent, CreateEntityFromInputDto(dto));
 
+        token.ThrowIfCancellationRequested();
+
         await _actualEventRepository.AddAsync(entity, token);
 
         var outputDto = CreateOutputDtoFromEntity(entity);
@@ -98,6 +102,8 @@ public class ActualEventService : IActualEventService
 
         _logger.LogInformation("[{ServiceName}]: Getting events from the database with target code: {TargetCode}...", ServiceName, targetCode);
 
+        token.ThrowIfCancellationRequested();
+
         var entities = await _actualEventRepository.GetByTargetCodeAsync(targetCode, token) ?? throw new EntityNotFoundException("Entities not found.");
 
         var firstEntity = entities.OrderBy(e => e.Id).First();
@@ -107,9 +113,11 @@ public class ActualEventService : IActualEventService
         var entitiesToUpdate = entities.OrderBy(e => e.Id).Skip(1);
 
         foreach (var entity in entitiesToUpdate)
-            ForciblyPrepareEntity(entity, firstEntityActualCofinanceRate);
+            UpdateEntity(entity, firstEntityActualCofinanceRate);
 
-        await _actualEventRepository.UpdateCollectionAsync(entities, token);
+        token.ThrowIfCancellationRequested();
+
+        await _actualEventRepository.UpdateEntitiesAsync(entities, token);
     }
     #endregion
 
@@ -126,18 +134,18 @@ public class ActualEventService : IActualEventService
 
         entity.ActualCofinanceRate = actualCofinanceRate;
         entity.ActualRegionalBudget = actualRegionalBudget;
-        entity.ActualLocalBudget = _budgetCalculator.CalculateActualLocalBudget(completedWorksBudget, actualRegionalBudget);
+        entity.ActualLocalBudget = _budgetCalculator.CalculateLocalBudget(completedWorksBudget, actualCofinanceRate);
 
         return entity;
     }
 
-    private ActualEventEntity ForciblyPrepareEntity(ActualEventEntity entity, decimal actualCofinanceRate)
+    private ActualEventEntity UpdateEntity(ActualEventEntity entity, decimal actualCofinanceRate)
     {
-        entity.ActualCofinanceRate = actualCofinanceRate;
         var completedWorksBudget = entity.CompletedWorksBudget;
 
-        entity.ActualLocalBudget = _budgetCalculator.ForciblyCalculateActualLocalBudgetBudgetWithCofinanceRate(completedWorksBudget, actualCofinanceRate);
-        entity.ActualRegionalBudget = _budgetCalculator.ForciblyCalculateActualRegionalBudgetWithCofinanceRate(completedWorksBudget, actualCofinanceRate);
+        entity.ActualCofinanceRate = actualCofinanceRate;
+        entity.ActualLocalBudget = _budgetCalculator.CalculateLocalBudget(completedWorksBudget, actualCofinanceRate);
+        entity.ActualRegionalBudget = _budgetCalculator.CalculateRegionalBudget(completedWorksBudget, actualCofinanceRate);
 
         return entity;
     }
