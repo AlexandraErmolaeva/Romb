@@ -23,7 +23,7 @@ public class ActualEventController : ControllerBase
 
     #region [GET]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ActualEventOutputDto>>> GetAsync(CancellationToken token)
+    public async Task<ActionResult<IEnumerable<ActualEventResponceDto>>> GetAsync(CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
@@ -34,7 +34,7 @@ public class ActualEventController : ControllerBase
 
     [HttpGet("{id}")]
     [ActionName(nameof(GetByIdAsync))]
-    public async Task<ActionResult<ActualEventOutputDto>> GetByIdAsync(long id, CancellationToken token)
+    public async Task<ActionResult<ActualEventResponceDto>> GetByIdAsync(long id, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get event with ID: {Id}.", ControllerName, id);
 
@@ -46,7 +46,7 @@ public class ActualEventController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<ActualEventOutputDto>>> GetByTargetCode([FromQuery] string targetCode, CancellationToken token)
+    public async Task<ActionResult<IEnumerable<ActualEventResponceDto>>> GetByTargetCode([FromQuery] string targetCode, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get events with target code: {TargetCode}.", ControllerName, targetCode);
 
@@ -60,7 +60,7 @@ public class ActualEventController : ControllerBase
 
     #region [POST]
     [HttpPost]
-    public async Task<IActionResult> AddAsync([FromBody] ActualEventInputDto dto, CancellationToken token)
+    public async Task<IActionResult> AddAsync([FromBody] ActualEventRequestDto dto, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to add event.", ControllerName);
 

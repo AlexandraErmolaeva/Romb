@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Romb.Application.Dtos;
 
-public class ActualEventInputDto
+public class ActualEventRequestDto
 {
     [Required(ErrorMessage = "Id is required.")]
     public long PlannedEventId { get; set; }

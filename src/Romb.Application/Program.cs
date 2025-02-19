@@ -1,13 +1,12 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Romb.Application;
-using Romb.Application.Helpers;
 using Romb.Application.Extensions;
 using Romb.Application.Mappers;
 using Romb.Application.Middleware;
-using Romb.Application.Services;
 using Serilog;
 using System.Reflection;
-using Romb.Application.Repositories;
 
 var assemblyName = Assembly.GetExecutingAssembly().GetName();
 
@@ -30,30 +29,27 @@ services.AddCustomRedis(configuration);
 LogInformation("- Adding Swagger...");
 services.AddCustomSwagger(assemblyName.Name);
 
-LogInformation($"- Adding {nameof(IPlannedEventService)}");
-services.AddScoped<IPlannedEventService, PlannedEventService>();
+LogInformation("- Adding Services...");
+services.AddServices();
 
-LogInformation($"- Adding {nameof(IActualEventService)}");
-services.AddScoped<IActualEventService, ActualEventService>();
+builder.Services.AddHealthChecks()
+    .AddRedis(configuration.GetConnectionString("Redis"), name: "redis", failureStatus: HealthStatus.Unhealthy);
 
-LogInformation($"- Adding {nameof(IPlannedEventRepository)}");
-services.AddScoped<IPlannedEventRepository, PlannedEventRepository>();
+LogInformation($"- Adding AutoMapper: {nameof(PlannedEventMappingProfile)}...");
+services.AddAutoMapper(typeof(PlannedEventMappingProfile));
 
-LogInformation($"- Adding {nameof(IActualEventRepository)}");
-services.AddScoped<IActualEventRepository, ActualEventRepository>();
-
-LogInformation($"- Adding {nameof(IBudgetCalculator)}");
-services.AddScoped<IBudgetCalculator, BudgetCalculator>();
-
-LogInformation("- Adding AutoMapper...");
-services.AddAutoMapper(typeof(PlanedEventMappingProfile));
+LogInformation($"- Adding AutoMapper: {nameof(ActualEventMappingProfile)}...");
+services.AddAutoMapper(typeof(ActualEventMappingProfile)); ;
 
 LogInformation("- Adding Controllers...");
 services.AddControllers();
 
 LogInformation("- Adding DbContext...");
 services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(configuration.GetConnectionString("NpgsqlDefaultConnection")));
+
+LogInformation("- Adding Controllers With Views...");
+services.AddControllersWithViews();
 
 LogInformation("- Bilding App...");
 var app = builder.Build();
@@ -65,6 +61,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); 
 }
 
+app.UseHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => true
+});
+
 LogInformation("- Using Https Redirection...");
 app.UseHttpsRedirection();
 
@@ -74,10 +75,15 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 LogInformation("- Using Routing...");
 app.UseRouting();
 
+LogInformation("- Using Static Files...");
+app.UseStaticFiles();
+
 LogInformation("- Using Https Endpoints...");
 app.UseEndpoints(endpoints =>
 {
     _ = endpoints.MapControllers();
+
+    _ = endpoints.MapFallbackToFile("index.html");
 });
 
 try

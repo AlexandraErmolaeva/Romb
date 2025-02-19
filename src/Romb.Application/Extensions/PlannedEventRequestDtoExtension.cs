@@ -3,9 +3,9 @@ using Romb.Application.Exceptions;
 
 namespace Romb.Application.Extensions;
 
-public static class PlannedEventInputDtoExtension
+public static class PlannedEventRequestDtoExtension
 {
-    public static void CheckValidity(this PlannedEventInputDto dto)
+    public static void CheckValidity(this PlannedEventRequestDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ArgumentException("Name cannot be empty.");

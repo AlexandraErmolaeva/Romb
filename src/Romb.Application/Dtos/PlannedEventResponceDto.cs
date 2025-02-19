@@ -1,6 +1,6 @@
 ﻿namespace Romb.Application.Dtos;
 
-public class PlannedEventOutputDto
+public class PlannedEventResponceDto
 {
     public long Id { get; init; }
     public string TargetCode { get; init; }

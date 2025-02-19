@@ -34,11 +34,11 @@ public class PlannedEventService : IPlannedEventService
     }
 
     #region [Getting events]
-    public async Task<IEnumerable<PlannedEventOutputDto>> GetAsync(CancellationToken token = default)
+    public async Task<IEnumerable<PlannedEventResponceDto>> GetAsync(CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting all events...", ServiceName);
 
-        var cachedDtos = await _redisService.GetAsync<IEnumerable<PlannedEventOutputDto>>(CacheKey.KeyForAllEvent, token);
+        var cachedDtos = await _redisService.GetAsync<IEnumerable<PlannedEventResponceDto>>(CacheKey.KeyForAllEvent, token);
 
         if (cachedDtos?.Any() == true)
         {
@@ -62,7 +62,7 @@ public class PlannedEventService : IPlannedEventService
         return outputDtos;
     }
 
-    public async Task<PlannedEventOutputDto> GetByIdAsync(long id, CancellationToken token = default)
+    public async Task<PlannedEventResponceDto> GetByIdAsync(long id, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting event from the database with ID: {Id}...", ServiceName, id);
 
@@ -77,13 +77,13 @@ public class PlannedEventService : IPlannedEventService
     #endregion
 
     #region [Adding events]
-    public async Task<PlannedEventOutputDto> AddAsync(PlannedEventInputDto dto, CancellationToken token = default)
+    public async Task<PlannedEventResponceDto> AddAsync(PlannedEventRequestDto requestDto, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Adding event to the database...", ServiceName);
 
-        dto.CheckValidity();
+        requestDto.CheckValidity();
 
-        var entity = PrepareEntity(CreateEntityFromInputDto(dto), dto);
+        var entity = PrepareEntity(CreateEntityFromInputDto(requestDto), requestDto);
 
         token.ThrowIfCancellationRequested();
 
@@ -91,9 +91,9 @@ public class PlannedEventService : IPlannedEventService
 
         await _redisService.RemoveAsync(CacheKey.KeyForAllEvent, token);
 
-        var outputDto = CreateOutputDtoFromEntity(entity);
+        var responceDto = CreateOutputDtoFromEntity(entity);
 
-        return outputDto;
+        return responceDto;
     }
     #endregion
 
@@ -124,7 +124,7 @@ public class PlannedEventService : IPlannedEventService
     #endregion
 
     #region [Updating events]
-    public async Task UpdateByIdAsync(long id, PlannedEventInputDto dto, CancellationToken token = default)
+    public async Task UpdateByIdAsync(long id, PlannedEventRequestDto dto, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Updating the event in the database with ID: {Id}...", ServiceName, id);
 
@@ -147,7 +147,7 @@ public class PlannedEventService : IPlannedEventService
     }
     #endregion
 
-    private PlannedEventEntity PrepareEntity(PlannedEventEntity entity, PlannedEventInputDto dto, bool isNeedToUpdate = false)
+    private PlannedEventEntity PrepareEntity(PlannedEventEntity entity, PlannedEventRequestDto dto, bool isNeedToUpdate = false)
     {
         if (isNeedToUpdate)
             MapInputDtoToEntity(dto, entity);
@@ -162,25 +162,25 @@ public class PlannedEventService : IPlannedEventService
     }
 
     #region [Mapping]
-    private PlannedEventOutputDto CreateOutputDtoFromEntity(PlannedEventEntity entity)
+    private PlannedEventResponceDto CreateOutputDtoFromEntity(PlannedEventEntity entity)
     {
-        return _mapper.Map<PlannedEventOutputDto>(entity);
+        return _mapper.Map<PlannedEventResponceDto>(entity);
     }
-    private PlannedEventEntity CreateEntityFromInputDto(PlannedEventInputDto dto)
+    private PlannedEventEntity CreateEntityFromInputDto(PlannedEventRequestDto dto)
     {
         return _mapper.Map<PlannedEventEntity>(dto);
     }
-    private void MapInputDtoToEntity(PlannedEventInputDto dto, PlannedEventEntity entity)
+    private void MapInputDtoToEntity(PlannedEventRequestDto dto, PlannedEventEntity entity)
     {
         _mapper.Map(dto, entity);
     }
-    private IEnumerable<PlannedEventOutputDto> CreateOutputDtosCollection(IEnumerable<PlannedEventEntity> entity)
+    private IEnumerable<PlannedEventResponceDto> CreateOutputDtosCollection(IEnumerable<PlannedEventEntity> entity)
     {
-        return _mapper.Map<IEnumerable<PlannedEventOutputDto>>(entity);
+        return _mapper.Map<IEnumerable<PlannedEventResponceDto>>(entity);
     }
     #endregion
 
-    private void PrintUpdatingEntity(PlannedEventEntity entity, PlannedEventInputDto dto, decimal previousValueOfRegionalBudget, decimal previousValueOfLocalBudget)
+    private void PrintUpdatingEntity(PlannedEventEntity entity, PlannedEventRequestDto dto, decimal previousValueOfRegionalBudget, decimal previousValueOfLocalBudget)
     {
         _logger.LogInformation("{_separator}", _separator);
         _logger.LogInformation("- Current name                      : {entity.Name}", entity.Name);

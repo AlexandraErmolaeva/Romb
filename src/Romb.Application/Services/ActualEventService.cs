@@ -28,7 +28,7 @@ public class ActualEventService : IActualEventService
     }
 
     #region [Getting events]
-    public async Task<IEnumerable<ActualEventOutputDto>> GetAsync(CancellationToken token = default)
+    public async Task<IEnumerable<ActualEventResponceDto>> GetAsync(CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting event from the database...", ServiceName);
 
@@ -41,7 +41,7 @@ public class ActualEventService : IActualEventService
         return outputDtos;
     }
 
-    public async Task<ActualEventOutputDto> GetByIdAsync(long id, CancellationToken token = default)
+    public async Task<ActualEventResponceDto> GetByIdAsync(long id, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Getting event from the database with ID: {Id}...", ServiceName, id);
 
@@ -54,7 +54,7 @@ public class ActualEventService : IActualEventService
         return outputDto;
     }
 
-    public async Task<IEnumerable<ActualEventOutputDto>> GetByTargetCodeAsync(string targetCode, CancellationToken token = default)
+    public async Task<IEnumerable<ActualEventResponceDto>> GetByTargetCodeAsync(string targetCode, CancellationToken token = default)
     {
         if (targetCode is null || string.IsNullOrWhiteSpace(targetCode))
             throw new ArgumentException("Target code is incorrect.");
@@ -72,25 +72,25 @@ public class ActualEventService : IActualEventService
     #endregion
 
     #region [Adding events]
-    public async Task<ActualEventOutputDto> AddAsync(ActualEventInputDto dto, CancellationToken token = default)
+    public async Task<ActualEventResponceDto> AddAsync(ActualEventRequestDto requestDto, CancellationToken token = default)
     {
         _logger.LogInformation("[{ServiceName}]: Adding event to the database...", ServiceName);
 
-        dto.CheckValidity();
+        requestDto.CheckValidity();
 
         token.ThrowIfCancellationRequested();
 
-        var plannedEvent = await _plannedEventRepository.GetByIdAsync(dto.PlannedEventId, token) ?? throw new EntityNotFoundException("Entity not found.");
+        var plannedEvent = await _plannedEventRepository.GetByIdAsync(requestDto.PlannedEventId, token) ?? throw new EntityNotFoundException("Entity not found.");
 
-        var entity = PrepareEntity(plannedEvent, CreateEntityFromInputDto(dto));
+        var entity = PrepareEntity(plannedEvent, CreateEntityFromInputDto(requestDto));
 
         token.ThrowIfCancellationRequested();
 
         await _actualEventRepository.AddAsync(entity, token);
 
-        var outputDto = CreateOutputDtoFromEntity(entity);
+        var responceDto = CreateOutputDtoFromEntity(entity);
 
-        return outputDto;
+        return responceDto;
     }
     #endregion
 
@@ -150,18 +150,18 @@ public class ActualEventService : IActualEventService
         return entity;
     }
 
-    private ActualEventOutputDto CreateOutputDtoFromEntity(ActualEventEntity entity)
+    private ActualEventResponceDto CreateOutputDtoFromEntity(ActualEventEntity entity)
     {
-        return _mapper.Map<ActualEventOutputDto>(entity);
+        return _mapper.Map<ActualEventResponceDto>(entity);
     }
 
-    private ActualEventEntity CreateEntityFromInputDto(ActualEventInputDto dto)
+    private ActualEventEntity CreateEntityFromInputDto(ActualEventRequestDto dto)
     {
         return _mapper.Map<ActualEventEntity>(dto);
     }
 
-    private IEnumerable<ActualEventOutputDto> CreateOutputDtosCollection(IEnumerable<ActualEventEntity> entities)
+    private IEnumerable<ActualEventResponceDto> CreateOutputDtosCollection(IEnumerable<ActualEventEntity> entities)
     {
-        return _mapper.Map<IEnumerable<ActualEventOutputDto>>(entities);
+        return _mapper.Map<IEnumerable<ActualEventResponceDto>>(entities);
     }
 }

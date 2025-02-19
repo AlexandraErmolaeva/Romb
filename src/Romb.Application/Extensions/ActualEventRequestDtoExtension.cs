@@ -3,9 +3,9 @@ using Romb.Application.Exceptions;
 
 namespace Romb.Application.Extensions;
 
-public static class ActualEventInputDtoExtension
+public static class ActualEventRequestDtoExtension
 {
-    public static void CheckValidity(this ActualEventInputDto dto)
+    public static void CheckValidity(this ActualEventRequestDto dto)
     {
         if (dto.PlannedEventId < 0)
             throw new IncorrectValueException("Incorrect planned event ID.");

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Romb.Application.Dtos;
 
-public class PlannedEventInputDto
+public class PlannedEventRequestDto
 {
     [Required(ErrorMessage = "Name is required.")]
     [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters.")]

@@ -8,10 +8,10 @@ public class ActualEventMappingProfile : Profile
 {
     public ActualEventMappingProfile()
     {
-        CreateMap<ActualEventEntity, ActualEventOutputDto>()
+        CreateMap<ActualEventEntity, ActualEventResponceDto>()
             .ForMember(dest => dest.TargetCode, opt => opt.MapFrom(srt => srt.PlannedEvent.TargetCode));
 
-        CreateMap<ActualEventInputDto, ActualEventEntity>()
+        CreateMap<ActualEventRequestDto, ActualEventEntity>()
             .ForMember(dest => dest.ActualCofinanceRate, opt => opt.Ignore())
             .ForMember(dest => dest.ActualLocalBudget, opt => opt.Ignore())
             .ForMember(dest => dest.ActualRegionalBudget, opt => opt.Ignore())

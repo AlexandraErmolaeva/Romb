@@ -4,13 +4,13 @@ using Romb.Application.Entities;
 
 namespace Romb.Application.Mappers;
 
-public class PlanedEventMappingProfile : Profile
+public class PlannedEventMappingProfile : Profile
 {
-    public PlanedEventMappingProfile()
+    public PlannedEventMappingProfile()
     {
-        CreateMap<PlannedEventEntity, PlannedEventOutputDto>();
+        CreateMap<PlannedEventEntity, PlannedEventResponceDto>();
 
-        CreateMap<PlannedEventInputDto, PlannedEventEntity>()
+        CreateMap<PlannedEventRequestDto, PlannedEventEntity>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.PlannedLocalBudget, opt => opt.Ignore())
             .ForMember(dest => dest.PlannedRegionalBudget, opt => opt.Ignore()); 

@@ -23,7 +23,7 @@ public class PlannedEventController : ControllerBase
 
     #region [GET]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PlannedEventOutputDto>>> GetAsync(CancellationToken token)
+    public async Task<ActionResult<IEnumerable<PlannedEventResponceDto>>> GetAsync(CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get all events.", ControllerName);
 
@@ -36,7 +36,7 @@ public class PlannedEventController : ControllerBase
 
     [HttpGet("{id}")]
     [ActionName(nameof(GetByIdAsync))]
-    public async Task<ActionResult<PlannedEventOutputDto>> GetByIdAsync(long id, CancellationToken token)
+    public async Task<ActionResult<PlannedEventResponceDto>> GetByIdAsync(long id, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to get event with ID: {Id}.", ControllerName, id);
 
@@ -50,7 +50,7 @@ public class PlannedEventController : ControllerBase
 
     #region [POST]
     [HttpPost]
-    public async Task<IActionResult> AddAsync([FromBody] PlannedEventInputDto dto, CancellationToken token)
+    public async Task<IActionResult> AddAsync([FromBody] PlannedEventRequestDto requestDto, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to add event.", ControllerName);
 
@@ -65,17 +65,17 @@ public class PlannedEventController : ControllerBase
             return BadRequest(new { message = "Validation failed.", errors = validationErrors });
         }
 
-        var outputDto = await _plannedEventService.AddAsync(dto, token);
+        var responceDto = await _plannedEventService.AddAsync(requestDto, token);
 
-        _logger.LogInformation("[{NameOfController}]: Event has been successfuly added with ID: {Id}.", ControllerName, outputDto.Id);
+        _logger.LogInformation("[{NameOfController}]: Event has been successfuly added with ID: {Id}.", ControllerName, responceDto.Id);
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = outputDto.Id }, outputDto);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = responceDto.Id }, responceDto);
     }
     #endregion
 
     #region [PUT]
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] PlannedEventInputDto dto, CancellationToken token)
+    public async Task<IActionResult> UpdateByIdAsync(long id, [FromBody] PlannedEventRequestDto dto, CancellationToken token)
     {
         _logger.LogInformation("[{NameOfController}]: Recieved a request to update event with ID: {Id}.", ControllerName, id);
 
