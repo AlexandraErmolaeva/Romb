@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using App.Metrics.Health;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace Romb.Application.HealthChecks
@@ -9,7 +10,7 @@ namespace Romb.Application.HealthChecks
     IConfiguration conf)
     : IHealthCheck
     {
-        public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+        Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> IHealthCheck.CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
